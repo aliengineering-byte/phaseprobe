@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "model": "logistic-map",
+  "seed": 17,
+  "parameters": {"r": 3.2},
+  "model_config": {"initial_state": {"x": 0.2}},
+  "simulation": {
+    "steps": 128,
+    "burn_in": 1500,
+    "dt": 1.0,
+    "sample_every": 1,
+    "trace_cap": 128,
+    "hard_state_limit": 10.0
+  },
+  "tolerances": {"period": 1e-9},
+  "scan": {
+    "parameter": "r",
+    "start": 3.2,
+    "stop": 3.4,
+    "points": 5,
+    "refine_iterations": 6,
+    "repeatability": 2
+  },
+  "classification_rule": "Finite-period tail classifier used by the positive logistic example.",
+  "refinement_rule": "Refine only if an adjacent qualitative class change is observed.",
+  "invalid_state_policy": "Abort on invalid integration."
+}

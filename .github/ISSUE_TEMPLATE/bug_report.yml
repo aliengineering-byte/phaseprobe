@@ -1,0 +1,35 @@
+name: Bug report
+description: Report a reproducible PhaseProbe defect.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    attributes:
+      label: Result first
+      description: What happened, and what should have happened?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Minimal reproduction
+      description: Include the command and a minimal non-sensitive configuration.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: PhaseProbe and Python versions
+      placeholder: "phaseprobe 0.1.0; Python 3.12.13"
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Operating system
+      options: [Windows, Linux, Other]
+    validations:
+      required: true
+  - type: checkboxes
+    attributes:
+      label: Safety
+      options:
+        - label: I removed credentials, private model data, and personal information.
+          required: true

@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "model": "predator-prey",
+  "seed": 31,
+  "parameters": {"alpha": 1.1, "beta": 0.4, "delta": 0.1, "gamma": 0.4},
+  "model_config": {"initial_state": {"prey": 10.0, "predator": 5.0}},
+  "simulation": {
+    "steps": 80,
+    "burn_in": 0,
+    "dt": 0.25,
+    "sample_every": 1,
+    "trace_cap": 80,
+    "hard_state_limit": 1000.0
+  },
+  "tolerances": {"invariant_drift": 1e-7},
+  "check": {"analysis": "invariants"},
+  "policy": {
+    "forbid_findings": true,
+    "require_finding": false,
+    "require_invariants": true
+  },
+  "classification_rule": "Same boundedness classifier as the refined-solver positive control.",
+  "refinement_rule": "Deliberately coarse fixed step demonstrates the invariant-drift policy control.",
+  "invalid_state_policy": "Abort on invalid integration; otherwise fail the declared invariant policy."
+}

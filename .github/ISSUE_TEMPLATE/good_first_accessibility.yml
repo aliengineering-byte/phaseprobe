@@ -1,0 +1,17 @@
+name: "Good first issue: report accessibility"
+description: Improve keyboard, contrast, and semantic HTML evidence without external assets.
+title: "[Good first issue] Improve offline report accessibility"
+labels: ["good first issue", "documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Audit the self-contained HTML report for semantic headings, table captions, contrast, print layout, and screen-reader labels. Add tests and before/after screenshots. Keep the report script-free, offline, and free of CDN resources.
+  - type: checkboxes
+    attributes:
+      label: Contributor checklist
+      options:
+        - label: I will document the audit method and measured changes.
+          required: true
+        - label: I will preserve HTML escaping and offline operation.
+          required: true

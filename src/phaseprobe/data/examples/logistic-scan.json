@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "model": "logistic-map",
+  "seed": 17,
+  "parameters": {"r": 3.448},
+  "model_config": {"initial_state": {"x": 0.2}},
+  "simulation": {
+    "steps": 256,
+    "burn_in": 500000,
+    "dt": 1.0,
+    "sample_every": 1,
+    "trace_cap": 256,
+    "hard_state_limit": 10.0
+  },
+  "tolerances": {"period": 1e-9},
+  "scan": {
+    "parameter": "r",
+    "start": 3.448,
+    "stop": 3.452,
+    "points": 3,
+    "refine_iterations": 12,
+    "repeatability": 2
+  },
+  "classification_rule": "Smallest detected period in {1,2,4,8,16} whose retained tail repeats within absolute tolerance; otherwise unresolved/aperiodic.",
+  "refinement_rule": "First adjacent coarse class change, followed by up to twelve deterministic binary probes. Refinement stops rather than relabeling a midpoint that reproduces neither stable endpoint class.",
+  "invalid_state_policy": "Abort as invalid integration on NaN, infinity, overflow, dimension mismatch, or hard-state-limit breach."
+}

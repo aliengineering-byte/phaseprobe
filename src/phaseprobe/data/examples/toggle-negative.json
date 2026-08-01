@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "model": "genetic-toggle",
+  "seed": 47,
+  "parameters": {"alpha_u": 3.0, "alpha_v": 3.0, "hill_u": 2.0, "hill_v": 2.0},
+  "model_config": {"initial_state": {"u": 3.0, "v": 0.2}},
+  "simulation": {
+    "steps": 1500,
+    "burn_in": 0,
+    "dt": 0.02,
+    "sample_every": 2,
+    "trace_cap": 750,
+    "hard_state_limit": 100.0
+  },
+  "tolerances": {"dominance": 0.05, "state_bound": 10.0},
+  "perturb": {
+    "dimension": "v",
+    "start": 0.01,
+    "stop": 0.5,
+    "points": 6,
+    "scale": "linear",
+    "predicate": "classification-change",
+    "divergence_threshold": 1.0,
+    "refine_iterations": 6,
+    "repeatability": 2
+  },
+  "classification_rule": "Same terminal dominance classifier as the positive toggle example.",
+  "refinement_rule": "No refinement if all bounded perturbations retain the baseline qualitative class.",
+  "invalid_state_policy": "Abort on invalid integration."
+}

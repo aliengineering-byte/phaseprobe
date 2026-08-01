@@ -1,0 +1,17 @@
+name: "Good first issue: JSON Schema fixtures"
+description: Publish schema documents and compatibility fixtures for config/replay/report JSON.
+title: "[Good first issue] Add JSON Schema validation fixtures"
+labels: ["good first issue", "tooling"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Add repository-owned JSON Schema documents for configuration, replay, and report version 1.0. Include valid and invalid fixtures, cross-platform tests, migration notes, and no new runtime dependency.
+  - type: checkboxes
+    attributes:
+      label: Contributor checklist
+      options:
+        - label: I will preserve existing version and integrity semantics.
+          required: true
+        - label: I will add actionable failure diagnostics and tests.
+          required: true
