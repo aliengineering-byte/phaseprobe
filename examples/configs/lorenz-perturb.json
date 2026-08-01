@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "model": "lorenz",
+  "seed": 23,
+  "parameters": {"sigma": 10.0, "rho": 28.0, "beta": 2.6666666666666665},
+  "model_config": {"initial_state": {"x": 1.0, "y": 1.0, "z": 1.0}},
+  "simulation": {
+    "steps": 8000,
+    "burn_in": 0,
+    "dt": 0.005,
+    "sample_every": 2,
+    "trace_cap": 4000,
+    "hard_state_limit": 1000.0
+  },
+  "tolerances": {"state_bound": 100.0},
+  "perturb": {
+    "dimension": "x",
+    "start": 1e-8,
+    "stop": 0.0001,
+    "points": 5,
+    "scale": "log",
+    "predicate": "finite-time-divergence",
+    "divergence_threshold": 1.0,
+    "refine_iterations": 8,
+    "repeatability": 2
+  },
+  "classification_rule": "Report retained finite-time lobe visitation; the finding predicate is Euclidean twin-trajectory separation, not a qualitative-class change.",
+  "refinement_rule": "Evaluate ascending logarithmic perturbations; refine a non-trigger/trigger bracket when one exists and repeat the smallest trigger.",
+  "invalid_state_policy": "Abort on NaN, infinity, overflow, or declared hard-state-limit breach."
+}

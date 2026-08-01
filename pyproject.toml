@@ -1,0 +1,114 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "phaseprobe"
+version = "0.1.0"
+description = "Find reproducible qualitative simulation transitions and turn them into regression tests."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [{ name = "Ali" }]
+keywords = ["simulation", "testing", "dynamical-systems", "reproducibility", "regression-testing"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Software Development :: Testing",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "build==1.3.0",
+  "mypy==1.17.1",
+  "pytest==8.4.1",
+  "pytest-cov==6.2.1",
+  "ruff==0.12.7",
+]
+demo = ["Pillow==11.3.0"]
+
+[project.scripts]
+phaseprobe = "phaseprobe.cli:main"
+
+[project.urls]
+Documentation = "https://github.com/aliengineering-byte/phaseprobe#readme"
+Issues = "https://github.com/aliengineering-byte/phaseprobe/issues"
+Source = "https://github.com/aliengineering-byte/phaseprobe"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/phaseprobe"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/.github",
+  "/assets",
+  "/src",
+  "/tests",
+  "/examples",
+  "/scripts",
+  "/README.md",
+  "/LICENSE",
+  "/AGENTS.md",
+  "/CHANGELOG.md",
+  "/CONTRIBUTING.md",
+  "/CODE_OF_CONDUCT.md",
+  "/SECURITY.md",
+  "/CITATION.cff",
+  "/ARCHITECTURE.md",
+  "/SCIENTIFIC_METHODS.md",
+  "/PRIOR_ART.md",
+  "/LIMITATIONS.md",
+  "/ROADMAP.md",
+  "/pyproject.toml",
+  "/uv.lock",
+]
+
+[tool.pytest.ini_options]
+addopts = "--strict-config --strict-markers -ra"
+testpaths = ["tests"]
+markers = [
+  "numerical: deterministic numerical validation",
+  "integration: CLI, replay, packaging, or generated-test integration",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["phaseprobe"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_unreachable = true
+mypy_path = "src"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+extend-exclude = [
+  ".cache",
+  ".phaseprobe",
+  ".research_private",
+  ".tools",
+  ".venv",
+  "build",
+  "dist",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["E501"]

@@ -1,0 +1,35 @@
+$ phaseprobe scan --example logistic
+QUALITATIVE TRANSITION FOUND
+
+Model: logistic-map
+Evidence: qualitative-regime-change
+Search dimension: r
+Stable bracket: 3.449477539 .. 3.449478027
+Smallest reproducible change found: 4.882812501e-07
+Baseline regime: period-2
+Changed regime: period-4
+Invariant violations: 0
+Repeatable: true
+Replay: .phaseprobe/runs/<run-id>/replay.json
+
+Scope: Smallest reproducible separation found by the declared bounded scan and binary refinement; not a proof of a globally minimal perturbation or exact bifurcation point.
+HTML report: .phaseprobe/runs/<run-id>/report.html
+
+$ phaseprobe replay .phaseprobe/runs/<run-id>/replay.json
+REPLAY VERIFIED
+
+Model: logistic-map
+baseline: classification=True, trace-hash=True, model-identity=True
+changed: classification=True, trace-hash=True, model-identity=True
+
+$ phaseprobe generate-test .phaseprobe/runs/<run-id>/replay.json
+PYTEST REGRESSION GENERATED
+
+Test: tests/generated/test_logistic_map_transition.py
+Replay fixture: tests/generated/fixtures/logistic_map-replay.json
+
+$ python -m pytest -q tests/generated
+.                                                                        [100%]
+1 passed in 0.97s
+
+Measured generation run: scan=9.879s, replay=1.328s, generate=1.330s, pytest=1.631s.

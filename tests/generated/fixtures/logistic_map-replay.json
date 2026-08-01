@@ -1,0 +1,100 @@
+{
+  "baseline": {
+    "classification": "period-2",
+    "initial_state": [
+      0.2
+    ],
+    "invariant_violations": 0,
+    "parameters": {
+      "r": 3.4494775390625003
+    },
+    "trace_sha256": "59fad16c37082ac14eb62b9e11fc7e6695c80896ea99bb1889d6e7a207271e4b"
+  },
+  "changed": {
+    "classification": "period-4",
+    "initial_state": [
+      0.2
+    ],
+    "invariant_violations": 0,
+    "parameters": {
+      "r": 3.4494780273437504
+    },
+    "trace_sha256": "0564695f9706df0e839e4aee48e720d82d02e17498da8db597e1f78508f7b3f0"
+  },
+  "configuration": {
+    "classification_rule": "Smallest detected period in {1,2,4,8,16} whose retained tail repeats within absolute tolerance; otherwise unresolved/aperiodic.",
+    "invalid_state_policy": "Abort as invalid integration on NaN, infinity, overflow, dimension mismatch, or hard-state-limit breach.",
+    "model": "logistic-map",
+    "model_config": {
+      "initial_state": {
+        "x": 0.2
+      }
+    },
+    "parameters": {
+      "r": 3.448
+    },
+    "refinement_rule": "First adjacent coarse class change, followed by up to twelve deterministic binary probes. Refinement stops rather than relabeling a midpoint that reproduces neither stable endpoint class.",
+    "scan": {
+      "parameter": "r",
+      "points": 3,
+      "refine_iterations": 12,
+      "repeatability": 2,
+      "start": 3.448,
+      "stop": 3.452
+    },
+    "schema_version": "1.0",
+    "seed": 17,
+    "simulation": {
+      "burn_in": 500000,
+      "dt": 1.0,
+      "hard_state_limit": 10.0,
+      "sample_every": 1,
+      "steps": 256,
+      "trace_cap": 256
+    },
+    "tolerances": {
+      "period": 1e-09
+    }
+  },
+  "created_by": "phaseprobe 0.1.0",
+  "finding": {
+    "baseline_regime": "period-2",
+    "bracket_width": 4.88281250099476e-07,
+    "changed_regime": "period-4",
+    "classification_rule": "Smallest detected period in {1,2,4,8,16} whose retained tail repeats within absolute tolerance; otherwise unresolved/aperiodic.",
+    "coarse_bracket": [
+      3.448,
+      3.45
+    ],
+    "kind": "qualitative-regime-change",
+    "minimality_statement": "Smallest reproducible separation found by the declared bounded scan and binary refinement; not a proof of a globally minimal perturbation or exact bifurcation point.",
+    "parameter": "r",
+    "refinement_rule": "First adjacent coarse class change, followed by up to twelve deterministic binary probes. Refinement stops rather than relabeling a midpoint that reproduces neither stable endpoint class.",
+    "repeatability": [
+      {
+        "runs": 2,
+        "side": "baseline",
+        "stable": true,
+        "trace_sha256": "59fad16c37082ac14eb62b9e11fc7e6695c80896ea99bb1889d6e7a207271e4b"
+      },
+      {
+        "runs": 2,
+        "side": "changed",
+        "stable": true,
+        "trace_sha256": "0564695f9706df0e839e4aee48e720d82d02e17498da8db597e1f78508f7b3f0"
+      }
+    ],
+    "smallest_reproducible_change_found": 4.88281250099476e-07,
+    "stable_bracket": [
+      3.4494775390625003,
+      3.4494780273437504
+    ],
+    "unresolved_midpoint": null
+  },
+  "integrity_sha256": "8e6d9a8ad624fe5339848168c8a329aafc5abf79a4b90e4e2b29e46bfcee7d20",
+  "model": "logistic-map",
+  "model_identity": "phaseprobe.builtin.logistic-map:v1",
+  "reproducible": true,
+  "schema_version": "1.0",
+  "seed": 17
+}

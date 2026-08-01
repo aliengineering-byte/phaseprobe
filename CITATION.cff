@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use PhaseProbe, cite the software release."
+title: "PhaseProbe"
+type: software
+authors:
+  - name: "Ali"
+version: 0.1.0
+date-released: 2026-08-01
+url: "https://github.com/aliengineering-byte/phaseprobe"
+repository-code: "https://github.com/aliengineering-byte/phaseprobe"
+license: Apache-2.0
+abstract: "PhaseProbe finds bounded qualitative simulation transitions and turns reproducible evidence into replay fixtures and pytest regressions."
+keywords:
+  - simulation testing
+  - reproducibility
+  - dynamical systems
+  - regression testing

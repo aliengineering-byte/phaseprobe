@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "model": "predator-prey",
+  "seed": 31,
+  "parameters": {"alpha": 1.1, "beta": 0.4, "delta": 0.1, "gamma": 0.4},
+  "model_config": {"initial_state": {"prey": 10.0, "predator": 5.0}},
+  "simulation": {
+    "steps": 4000,
+    "burn_in": 0,
+    "dt": 0.005,
+    "sample_every": 1,
+    "trace_cap": 4000,
+    "hard_state_limit": 1000.0
+  },
+  "tolerances": {"invariant_drift": 1e-7},
+  "check": {"analysis": "invariants"},
+  "policy": {
+    "forbid_findings": true,
+    "require_finding": false,
+    "require_invariants": true
+  },
+  "classification_rule": "Both retained populations remain strictly positive, classified as a bounded positive oscillation.",
+  "refinement_rule": "Fixed-step RK4 at dt=0.005; compare the analytic first integral against its initial retained value.",
+  "invalid_state_policy": "Abort on invalid integration; fail policy on invariant drift or non-positive population."
+}

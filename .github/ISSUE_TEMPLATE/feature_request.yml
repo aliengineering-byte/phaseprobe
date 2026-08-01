@@ -1,0 +1,23 @@
+name: Feature request
+description: Propose a focused simulation-testing improvement.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    attributes:
+      label: Testing job
+      description: Which transition, replay, evidence, or regression-testing job is missing?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Proposed evidence
+      description: Describe positive cases, negative controls, scientific terminology, and validation.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Alternatives and prior art
+      description: Link relevant tools or primary papers and explain the remaining gap.
+    validations:
+      required: true

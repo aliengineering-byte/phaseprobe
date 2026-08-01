@@ -1,0 +1,17 @@
+name: "Good first issue: damped pendulum adapter"
+description: Add a small deterministic adapter with positive/negative controls.
+title: "[Good first issue] Add a damped-pendulum adapter"
+labels: ["good first issue", "example"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Implement a typed damped-pendulum adapter, an energy-decay invariant, a positive transition/check, a negative control, a primary citation, deterministic tests, replay coverage, and documentation. Do not label numerical damping as physical evidence without a solver-refinement comparison.
+  - type: checkboxes
+    attributes:
+      label: Contributor checklist
+      options:
+        - label: I will add configuration, tolerances, invalid-state policy, and bounded trace retention.
+          required: true
+        - label: I will add positive, negative-control, replay, and generated-test coverage.
+          required: true
