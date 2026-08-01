@@ -65,7 +65,7 @@ These are single-environment observations, not cross-machine benchmark claims.
 | reports | terminal, JSON, HTML regeneration tests | passed; HTML contains no script or CDN reference |
 | demo | `python scripts/generate_demo.py` | GIF, static PNG, sanitized real-command transcript created |
 | documentation links | `python scripts/check_links.py` | 15 Markdown files, 22 external links inventoried, no missing local links |
-| privacy/secret/large file | `python scripts/hygiene.py` | 77 public files scanned before Git, no issues, no file over 1 MB |
+| privacy/secret/large file | `python scripts/hygiene.py` | 77 tracked public files scanned, no issues, no file over 1 MB |
 | package contents | wheel/SDist archive inspection | wheel 32 files, source archive 76 files, no PDF/private research/tool/environment path |
 | runtime dependencies | wheel metadata plus clean uv environment | no runtime `Requires-Dist`; only PhaseProbe installed before test tooling |
 | packed install | wheel into isolated project-local environment | version, positive scan, strict replay, test generation, and generated pytest passed |
@@ -86,10 +86,19 @@ These are single-environment observations, not cross-machine benchmark claims.
 6. The first packed-smoke script used an unavailable old-PowerShell parameter. Replaced it with an explicit artifact count and compatible selection.
 7. A uv-created smoke environment intentionally had no `pip` module, so `python -m pip freeze` was not a valid dependency query. Repeated the gate with `uv pip freeze --python`; wheel metadata independently confirmed zero runtime dependencies.
 8. The first committed generated test failed Ruff import-block normalization. Updated the generator template, regenerated the test, and restarted the full final gate.
+9. The first staged `git diff --check` found extra blank lines at EOF and CRLF-sensitive demo/fixture lines. Normalized the reported text endings, added repository-level LF attributes, and reran the full local gates; the final staged diff check passed.
+
+## Remote publication evidence
+
+- Verified GitHub authentication as the required `aliengineering-byte` account before initializing Git.
+- Created the public `aliengineering-byte/phaseprobe` repository with `main` as its default branch, then pushed `agent/phaseprobe-v0.1.0`.
+- Opened draft pull request #1 from the release branch to `main`.
+- GitHub Actions run `30719800789` passed all seven jobs: package-and-hygiene plus Windows and Ubuntu on Python 3.10, 3.12, and 3.14.
+- Tag creation, release publication, and the unauthenticated public-clone verification necessarily occur after this release commit is frozen; their evidence is reported in the final release handoff rather than retroactively changing the tagged source.
 
 ## Skipped or bounded checks
 
 - External documentation links are inventoried in CI but not fetched there to avoid network-flaky builds; the prior-art/name audit used live official/primary sources during this release run.
 - No formal trademark or legal clearance was performed.
 - No PyPI or npm publication was attempted or authorized.
-- GitHub/CI/release/fresh-public-clone evidence is appended only after those remote actions complete.
+- The tagged release remains immutable; post-tag release and fresh-public-clone evidence is therefore external to this tracked pre-release log.
