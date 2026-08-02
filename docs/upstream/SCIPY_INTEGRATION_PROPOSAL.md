@@ -95,15 +95,48 @@ propose this external qualitative regression/replay layer.
 Project quick start and terminal assets:
 https://github.com/aliengineering-byte/phaseprobe#use-with-scipy
 
-## Suggested discussion title
+## Discussion title and body
 
-`PhaseProbe: tolerance-aware qualitative regression fixtures for SciPy solve_ivp models`
+`PhaseProbe: reproducible transition detection and regression generation for solve_ivp models`
 
-## Human-editable outreach message
+Hi SciPy community,
 
-> I built an optional, dependency-isolated PhaseProbe adapter for public `solve_ivp` models. It
-> keeps SciPy responsible for integration and adds bounded qualitative searches, explicit
-> tolerance replay, and generated pytest regressions. The examples include finite-time Lorenz
-> divergence with a negative control and a Lotka–Volterra invariant refinement check. I reviewed
-> related tolerance, event, work-bound, and callback discussions and do not propose a SciPy API
-> change. Would this workflow be useful to users maintaining scientific simulation regressions?
+I built PhaseProbe, an open-source downstream testing tool for dynamical-system simulations. It
+uses `scipy.integrate.solve_ivp` through a trajectory-level adapter to search bounded parameter or
+initial-condition regions for reproducible qualitative transitions, preserve replay evidence, and
+generate pytest regression tests from the findings.
+
+The motivation is a practical testing problem: a numerical model can continue integrating
+successfully while a small parameter or initial-condition change moves it into a different
+qualitative regime. PhaseProbe records the search configuration, solver method and tolerances,
+environment evidence, trajectory hashes, observables, classifications, and transition bracket so
+that the result can be independently replayed.
+
+The current release includes examples for Lorenz finite-time divergence and predator–prey
+invariant drift. For adaptive SciPy integrations, replay is tolerance-based rather than claimed to
+be bit-exact. The results are explicitly bounded, finite-time numerical evidence—not proofs of
+chaos, exact bifurcation locations, Lyapunov estimates, or globally minimal perturbations.
+
+Repository:
+https://github.com/aliengineering-byte/phaseprobe
+
+Release:
+https://github.com/aliengineering-byte/phaseprobe/releases/tag/v0.2.0
+
+PyPI:
+https://pypi.org/project/phaseprobe/
+
+Technical proposal and limitations:
+https://github.com/aliengineering-byte/phaseprobe/blob/v0.2.0/docs/upstream/SCIPY_INTEGRATION_PROPOSAL.md
+
+I am not proposing to add PhaseProbe to SciPy core. I would value feedback on three points:
+
+1. Whether the tolerance-based replay evidence for adaptive `solve_ivp` trajectories is
+   scientifically and practically appropriate.
+2. Whether the trajectory-level adapter and recorded solver/environment metadata omit evidence
+   that SciPy users would expect.
+3. Whether a downstream example or ecosystem/documentation reference could be appropriate if the
+   tool proves useful to users.
+
+Feedback on the design, terminology, numerical claims, and useful real-world test cases would be
+very welcome.

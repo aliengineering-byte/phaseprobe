@@ -1,0 +1,150 @@
+name: Publish an existing GitHub release to PyPI
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Immutable release tag (for example, v0.2.0)
+        required: true
+        type: string
+      version:
+        description: Expected package version (for example, 0.2.0)
+        required: true
+        type: string
+      commit:
+        description: Expected 40-character commit for the tag
+        required: true
+        type: string
+      wheel_sha256:
+        description: Expected SHA-256 for the wheel release asset
+        required: true
+        type: string
+      sdist_sha256:
+        description: Expected SHA-256 for the source release asset
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: pypi-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify immutable release assets
+    if: >-
+      github.repository == 'aliengineering-byte/phaseprobe' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Download and verify the selected release
+        env:
+          TAG: ${{ inputs.tag }}
+          VERSION: ${{ inputs.version }}
+          EXPECTED_COMMIT: ${{ inputs.commit }}
+          WHEEL_SHA256: ${{ inputs.wheel_sha256 }}
+          SDIST_SHA256: ${{ inputs.sdist_sha256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "$TAG" == "v$VERSION" ]]
+          [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$WHEEL_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$SDIST_SHA256" =~ ^[0-9a-f]{64}$ ]]
+
+          repository_url="https://github.com/${GITHUB_REPOSITORY}.git"
+          tag_refs="$(git ls-remote "$repository_url" "refs/tags/$TAG" "refs/tags/$TAG^{}")"
+          direct_commit="$(awk -v ref="refs/tags/$TAG" '$2 == ref { print $1 }' <<<"$tag_refs")"
+          peeled_commit="$(awk -v ref="refs/tags/$TAG^{}" '$2 == ref { print $1 }' <<<"$tag_refs")"
+          resolved_commit="${peeled_commit:-$direct_commit}"
+          [[ -n "$resolved_commit" ]]
+          [[ "$resolved_commit" == "$EXPECTED_COMMIT" ]]
+
+          wheel="phaseprobe-$VERSION-py3-none-any.whl"
+          sdist="phaseprobe-$VERSION.tar.gz"
+          release_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/$TAG"
+          mkdir dist
+          curl --fail --location --proto '=https' --tlsv1.2 \
+            --output "dist/$wheel" "$release_url/$wheel"
+          curl --fail --location --proto '=https' --tlsv1.2 \
+            --output "dist/$sdist" "$release_url/$sdist"
+          printf '%s  %s\n%s  %s\n' \
+            "$WHEEL_SHA256" "dist/$wheel" \
+            "$SDIST_SHA256" "dist/$sdist" | sha256sum --check --strict
+
+          python3 -m venv .twine-check
+          .twine-check/bin/python -m pip install --disable-pip-version-check 'twine==7.0.0'
+          .twine-check/bin/python -m twine check "dist/$wheel" "dist/$sdist"
+
+          python3 - "$VERSION" "dist/$wheel" "dist/$sdist" <<'PY'
+          import email
+          import sys
+          import tarfile
+          import zipfile
+
+          expected_version, wheel_path, sdist_path = sys.argv[1:]
+
+          with zipfile.ZipFile(wheel_path) as archive:
+              metadata_names = [
+                  name for name in archive.namelist() if name.endswith(".dist-info/METADATA")
+              ]
+              assert len(metadata_names) == 1, metadata_names
+              wheel_metadata = email.message_from_bytes(archive.read(metadata_names[0]))
+
+          with tarfile.open(sdist_path, "r:gz") as archive:
+              metadata_members = [
+                  member
+                  for member in archive.getmembers()
+                  if member.isfile() and member.name.count("/") == 1 and member.name.endswith("/PKG-INFO")
+              ]
+              assert len(metadata_members) == 1, [member.name for member in metadata_members]
+              extracted = archive.extractfile(metadata_members[0])
+              assert extracted is not None
+              sdist_metadata = email.message_from_bytes(extracted.read())
+
+          for metadata in (wheel_metadata, sdist_metadata):
+              assert metadata["Name"] == "phaseprobe"
+              assert metadata["Version"] == expected_version
+              assert metadata["Requires-Python"] == ">=3.10"
+              assert metadata["License-Expression"] == "Apache-2.0"
+              assert "scipy" in metadata.get_all("Provides-Extra", [])
+              requirements = metadata.get_all("Requires-Dist", [])
+              assert any(req.startswith("numpy") and "extra == 'scipy'" in req for req in requirements)
+              assert any(req.startswith("scipy") and "extra == 'scipy'" in req for req in requirements)
+              project_urls = metadata.get_all("Project-URL", [])
+              assert any(url.startswith("Source, https://github.com/aliengineering-byte/phaseprobe") for url in project_urls)
+          PY
+
+      - name: Store the verified distributions
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: verified-distributions-${{ inputs.tag }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: Publish verified distributions
+    needs: verify
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/phaseprobe/${{ inputs.version }}/
+    permissions:
+      id-token: write
+    steps:
+      - name: Retrieve the verified distributions
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: verified-distributions-${{ inputs.tag }}
+          path: dist
+
+      - name: Publish distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
+        with:
+          packages-dir: dist/
