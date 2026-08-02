@@ -5,7 +5,7 @@
 Maintaining a simulation is risky when a tiny parameter or initial-condition change can cross a qualitative boundary while ordinary numeric assertions still look plausible. PhaseProbe runs a bounded, deterministic search, records exactly what it tested, and emits an offline report plus an executable pytest regression.
 
 ```console
-$ python -m pip install .
+$ pip install phaseprobe
 $ phaseprobe scan --example logistic
 QUALITATIVE TRANSITION FOUND
 
@@ -24,12 +24,19 @@ $ python -m pytest -q tests/generated
 
 No API key, LLM, GPU, Docker, account, telemetry, network connection, or hosted service is required at runtime. PhaseProbe's base installation has no third-party runtime dependencies; NumPy and SciPy are isolated in the optional `scipy` extra.
 
+## Installation
+
+```bash
+pip install phaseprobe
+pip install "phaseprobe[scipy]"
+```
+
 ## Five-minute quick start
 
 Requires Python 3.10 or newer on Windows or Linux.
 
 ```bash
-python -m pip install .
+pip install phaseprobe
 phaseprobe scan --example logistic
 phaseprobe replay .phaseprobe/runs/<run-id>/replay.json
 phaseprobe generate-test .phaseprobe/runs/<run-id>/replay.json
