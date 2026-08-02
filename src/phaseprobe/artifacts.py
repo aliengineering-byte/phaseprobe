@@ -74,7 +74,7 @@ def write_artifacts(outcome: ProbeOutcome, output_root: Path) -> ArtifactBundle:
     findings_json.write_text(
         json.dumps(
             {
-                "schema_version": "1.0",
+                "schema_version": "2.0",
                 "status": outcome.status,
                 "finding": dict(outcome.finding) if outcome.finding is not None else None,
                 "reproducible": outcome.reproducible,
@@ -98,7 +98,7 @@ def write_artifacts(outcome: ProbeOutcome, output_root: Path) -> ArtifactBundle:
 
     files = [run_json, findings_json, replay_json, trace_jsonl, report_html]
     manifest = {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "run_id": run_directory.name,
         "bounded_trace": {
             "baseline_points": len(outcome.baseline.trace),

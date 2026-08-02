@@ -83,4 +83,4 @@ def test_report_command_source_regenerates_json_and_html(artifact_run: Path) -> 
     json_path, html_path = regenerate_reports(artifact_run)
     assert json_path.exists()
     assert html_path.exists()
-    assert json.loads(json_path.read_text(encoding="utf-8"))["schema_version"] == "1.0"
+    assert json.loads(json_path.read_text(encoding="utf-8"))["schema_version"] == "2.0"

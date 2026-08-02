@@ -8,10 +8,20 @@ from collections import deque
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
+from phaseprobe.adapters.loader import load_configured_adapter
 from phaseprobe.config import ProbeConfig, canonical_json
 from phaseprobe.errors import ConfigurationError, NumericalFailure
 from phaseprobe.models import get_model
-from phaseprobe.types import InvariantResult, ModelAdapter, State, TracePoint
+from phaseprobe.types import (
+    InvariantResult,
+    ModelAdapter,
+    SimulationTrace,
+    State,
+    TracePoint,
+    TrajectoryAdapter,
+)
+
+Adapter = ModelAdapter | TrajectoryAdapter
 
 
 def _number(values: Mapping[str, object], name: str, default: float | None = None) -> float:
@@ -99,6 +109,33 @@ class SimulationSettings:
         }
 
 
+@dataclass(frozen=True, slots=True)
+class TrajectorySettings:
+    """Engine-owned bounds for one trajectory-level adapter execution."""
+
+    trace_cap: int
+    hard_state_limit: float
+
+    @classmethod
+    def from_config(cls, values: Mapping[str, object]) -> TrajectorySettings:
+        settings = cls(
+            trace_cap=_integer(values, "trace_cap", 2048),
+            hard_state_limit=_number(values, "hard_state_limit", 1e100),
+        )
+        if settings.trace_cap < 16 or settings.trace_cap > 100_000:
+            raise ConfigurationError("simulation trace_cap must be between 16 and 100000")
+        if settings.hard_state_limit <= 0.0:
+            raise ConfigurationError("simulation hard_state_limit must be positive")
+        return settings
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "mode": "trajectory",
+            "trace_cap": self.trace_cap,
+            "hard_state_limit": self.hard_state_limit,
+        }
+
+
 def _invariant_dict(result: InvariantResult) -> dict[str, object]:
     return {
         "name": result.name,
@@ -127,7 +164,7 @@ def trace_hash(trace: Sequence[TracePoint]) -> str:
 
 @dataclass(frozen=True, slots=True)
 class SimulationResult:
-    """One bounded deterministic execution."""
+    """One bounded step-level or trajectory-level execution."""
 
     model: str
     model_identity: str
@@ -135,12 +172,15 @@ class SimulationResult:
     parameters: Mapping[str, float]
     initial_state: State
     final_state: State
-    settings: SimulationSettings
+    settings: SimulationSettings | TrajectorySettings
     tolerances: Mapping[str, float]
     classification: str
     invariants: tuple[InvariantResult, ...]
+    observations: Mapping[str, object]
     trace: tuple[TracePoint, ...]
     trace_sha256: str
+    replay_mode: str
+    execution_metadata: Mapping[str, object]
 
     @property
     def invariant_violations(self) -> int:
@@ -159,8 +199,11 @@ class SimulationResult:
             "classification": self.classification,
             "invariants": [_invariant_dict(result) for result in self.invariants],
             "invariant_violations": self.invariant_violations,
+            "observations": dict(self.observations),
             "trace_points_retained": len(self.trace),
             "trace_sha256": self.trace_sha256,
+            "replay_mode": self.replay_mode,
+            "execution_metadata": dict(self.execution_metadata),
         }
         if include_trace:
             payload["trace"] = [_point_dict(point) for point in self.trace]
@@ -183,7 +226,7 @@ class ProbeOutcome:
 
     def as_dict(self) -> dict[str, object]:
         return {
-            "schema_version": "1.0",
+            "schema_version": "2.0",
             "command": self.command,
             "status": self.status,
             "model": self.baseline.model,
@@ -199,7 +242,10 @@ class ProbeOutcome:
 
 
 def _validate_state(
-    model: ModelAdapter, state: State, settings: SimulationSettings, step: int
+    model: Adapter,
+    state: State,
+    settings: SimulationSettings | TrajectorySettings,
+    step: int,
 ) -> None:
     if len(state) != len(model.dimensions):
         raise NumericalFailure(
@@ -217,20 +263,95 @@ def _validate_state(
             )
 
 
+def _resolve_adapter(config: ProbeConfig, adapter: Adapter | None) -> Adapter:
+    if adapter is not None:
+        if not isinstance(adapter, ModelAdapter | TrajectoryAdapter):
+            raise ConfigurationError("adapter does not implement a PhaseProbe protocol")
+        if adapter.name != config.model:
+            raise ConfigurationError(
+                f"adapter name {adapter.name!r} does not match model {config.model!r}"
+            )
+        return adapter
+    try:
+        return get_model(config.model)
+    except ConfigurationError:
+        if "adapter" not in config.data:
+            raise
+    return load_configured_adapter(config)
+
+
+def _validate_trace_points(
+    model: Adapter,
+    trace: SimulationTrace,
+    settings: TrajectorySettings,
+) -> None:
+    if not trace.points:
+        raise NumericalFailure("trajectory adapter returned an empty trace")
+    direction = 0
+    previous_time: float | None = None
+    for point in trace.points:
+        if not math.isfinite(point.time):
+            raise NumericalFailure("trajectory adapter returned a NaN or infinite time")
+        _validate_state(model, point.state, settings, point.step)
+        for name, value in point.observations.items():
+            if not isinstance(name, str) or not name:
+                raise NumericalFailure("trajectory observable names must be non-empty strings")
+            if isinstance(value, int | float) and not isinstance(value, bool):
+                if not math.isfinite(float(value)):
+                    raise NumericalFailure(f"trajectory observable {name!r} is NaN or infinite")
+            elif not isinstance(value, str):
+                raise NumericalFailure(
+                    f"trajectory observable {name!r} must be a finite number or string"
+                )
+        if previous_time is not None:
+            delta = point.time - previous_time
+            if delta == 0.0:
+                raise NumericalFailure("trajectory retained duplicate time points")
+            this_direction = 1 if delta > 0.0 else -1
+            if direction == 0:
+                direction = this_direction
+            elif direction != this_direction:
+                raise NumericalFailure("trajectory retained times are not monotonic")
+        previous_time = point.time
+    _validate_state(model, trace.final_state, settings, trace.points[-1].step)
+
+
+def _bounded_trace(trace: SimulationTrace, cap: int) -> SimulationTrace:
+    if len(trace.points) <= cap:
+        return trace
+    last = len(trace.points) - 1
+    indices = tuple(round(index * last / (cap - 1)) for index in range(cap))
+    points = tuple(trace.points[index] for index in indices)
+    metadata = dict(trace.metadata)
+    metadata["retention"] = {
+        "points_produced": len(trace.points),
+        "points_retained": len(points),
+        "strategy": "uniform-in-index-with-endpoints",
+    }
+    return SimulationTrace(
+        points=points,
+        final_state=trace.final_state,
+        success=trace.success,
+        status=trace.status,
+        message=trace.message,
+        metadata=metadata,
+    )
+
+
 def simulate(
     config: ProbeConfig,
     *,
     parameters_override: Mapping[str, float] | None = None,
     initial_override: State | None = None,
+    adapter: Adapter | None = None,
 ) -> SimulationResult:
     """Execute one model with explicit seed, parameters, retention, and tolerances."""
 
-    model = get_model(config.model)
+    model = _resolve_adapter(config, adapter)
     parameters = _numeric_mapping(config.section("parameters"), "parameters")
     if parameters_override is not None:
         parameters.update(parameters_override)
     tolerances = _numeric_mapping(config.section("tolerances", required=False), "tolerances")
-    settings = SimulationSettings.from_config(config.section("simulation"))
     model_config = config.section("model_config", required=False)
     state = (
         initial_override
@@ -238,6 +359,45 @@ def simulate(
         else model.initial_state(model_config, config.seed)
     )
     initial = tuple(state)
+    if isinstance(model, TrajectoryAdapter):
+        trajectory_settings = TrajectorySettings.from_config(config.section("simulation"))
+        _validate_state(model, initial, trajectory_settings, 0)
+        try:
+            raw_trace = model.simulate(initial, parameters, model_config, config.seed)
+        except NumericalFailure:
+            raise
+        except (ArithmeticError, RuntimeError, TypeError, ValueError) as exc:
+            raise NumericalFailure(f"trajectory solver failure: {exc}") from exc
+        _validate_trace_points(model, raw_trace, trajectory_settings)
+        if not raw_trace.success:
+            raise NumericalFailure(
+                f"solver failure with status {raw_trace.status}: {raw_trace.message}"
+            )
+        bounded = _bounded_trace(raw_trace, trajectory_settings.trace_cap)
+        classification = model.classify(bounded, tolerances)
+        invariants = tuple(model.invariants(bounded, parameters, tolerances))
+        observations = dict(model.observe(bounded))
+        execution_metadata = dict(bounded.metadata)
+        execution_metadata["adapter_configuration"] = dict(model.configuration())
+        return SimulationResult(
+            model=model.name,
+            model_identity=model.identity,
+            seed=config.seed,
+            parameters=parameters,
+            initial_state=initial,
+            final_state=bounded.final_state,
+            settings=trajectory_settings,
+            tolerances=tolerances,
+            classification=classification,
+            invariants=invariants,
+            observations=observations,
+            trace=bounded.points,
+            trace_sha256=trace_hash(bounded.points),
+            replay_mode=model.replay_mode,
+            execution_metadata=execution_metadata,
+        )
+
+    settings = SimulationSettings.from_config(config.section("simulation"))
     _validate_state(model, initial, settings, 0)
     retained: deque[TracePoint] = deque(maxlen=settings.trace_cap)
     total_steps = settings.burn_in + settings.steps
@@ -272,8 +432,11 @@ def simulate(
         tolerances=tolerances,
         classification=classification,
         invariants=invariants,
+        observations=dict(trace[-1].observations),
         trace=trace,
         trace_sha256=trace_hash(trace),
+        replay_mode="exact",
+        execution_metadata={"execution_kind": "step", "solver_success": True},
     )
 
 
@@ -291,7 +454,7 @@ def _logspace(start: float, stop: float, points: int) -> list[float]:
     return [math.exp(value) for value in _linspace(log_start, log_stop, points)]
 
 
-def run_scan(config: ProbeConfig) -> ProbeOutcome:
+def run_scan(config: ProbeConfig, *, adapter: Adapter | None = None) -> ProbeOutcome:
     """Scan a one-dimensional parameter and refine the first adjacent class change."""
 
     scan = config.section("scan")
@@ -308,7 +471,7 @@ def run_scan(config: ProbeConfig) -> ProbeOutcome:
     runs: list[SimulationResult] = []
     values = _linspace(start, stop, points)
     for value in values:
-        run = simulate(config, parameters_override={parameter_name: value})
+        run = simulate(config, parameters_override={parameter_name: value}, adapter=adapter)
         runs.append(run)
         history.append({"phase": "coarse", "value": value, "classification": run.classification})
 
@@ -340,7 +503,9 @@ def run_scan(config: ProbeConfig) -> ProbeOutcome:
     unresolved_midpoint: float | None = None
     for _ in range(refinements):
         midpoint = (low + high) / 2.0
-        midpoint_run = simulate(config, parameters_override={parameter_name: midpoint})
+        midpoint_run = simulate(
+            config, parameters_override={parameter_name: midpoint}, adapter=adapter
+        )
         history.append(
             {
                 "phase": "refine",
@@ -375,7 +540,9 @@ def run_scan(config: ProbeConfig) -> ProbeOutcome:
         classes: list[str] = []
         for _ in range(repeatability):
             value = low if side == "baseline" else high
-            confirmed = simulate(config, parameters_override={parameter_name: value})
+            confirmed = simulate(
+                config, parameters_override={parameter_name: value}, adapter=adapter
+            )
             hashes.append(confirmed.trace_sha256)
             classes.append(confirmed.classification)
         stable = len(set(hashes)) == 1 and len(set(classes)) == 1
@@ -425,7 +592,9 @@ def _pair_metrics(
     distances = [_distance(a.state, b.state) for a, b in zip(left, right, strict=False)]
     max_index = max(range(count), key=distances.__getitem__)
     max_distance = distances[max_index]
-    elapsed = max(right[max_index].time - right[0].time, changed.settings.dt)
+    elapsed = abs(right[max_index].time - right[0].time)
+    if elapsed == 0.0:
+        elapsed = 1.0
     initial_separation = abs(delta)
     rate: float | None = None
     if initial_separation > 0.0 and max_distance > 0.0:
@@ -439,11 +608,11 @@ def _pair_metrics(
     }
 
 
-def run_perturb(config: ProbeConfig) -> ProbeOutcome:
+def run_perturb(config: ProbeConfig, *, adapter: Adapter | None = None) -> ProbeOutcome:
     """Search bounded initial-state perturbations using a deterministic predicate."""
 
     search = config.section("perturb")
-    model = get_model(config.model)
+    model = _resolve_adapter(config, adapter)
     dimension = _string(search, "dimension")
     try:
         dimension_index = model.dimensions.index(dimension)
@@ -473,7 +642,7 @@ def run_perturb(config: ProbeConfig) -> ProbeOutcome:
     if scale not in {"linear", "log"}:
         raise ConfigurationError("perturb scale must be linear or log")
 
-    baseline = simulate(config)
+    baseline = simulate(config, adapter=model)
     initial = baseline.initial_state
     history: list[Mapping[str, object]] = []
     previous_delta = 0.0
@@ -485,7 +654,7 @@ def run_perturb(config: ProbeConfig) -> ProbeOutcome:
     def evaluate(delta: float, phase: str) -> tuple[bool, SimulationResult, dict[str, object]]:
         candidate_state = list(initial)
         candidate_state[dimension_index] += delta
-        changed = simulate(config, initial_override=tuple(candidate_state))
+        changed = simulate(config, initial_override=tuple(candidate_state), adapter=model)
         metrics = _pair_metrics(baseline, changed, delta)
         if predicate == "classification-change":
             triggered = (
@@ -587,7 +756,7 @@ def run_perturb(config: ProbeConfig) -> ProbeOutcome:
     )
 
 
-def run_check(config: ProbeConfig) -> ProbeOutcome:
+def run_check(config: ProbeConfig, *, adapter: Adapter | None = None) -> ProbeOutcome:
     """Execute a declared CI policy and mark only policy violations as failure."""
 
     check = config.section("check")
@@ -598,11 +767,11 @@ def run_check(config: ProbeConfig) -> ProbeOutcome:
     require_invariants = _boolean(policy, "require_invariants", True)
 
     if analysis == "scan":
-        outcome = run_scan(config)
+        outcome = run_scan(config, adapter=adapter)
     elif analysis == "perturb":
-        outcome = run_perturb(config)
+        outcome = run_perturb(config, adapter=adapter)
     elif analysis == "invariants":
-        baseline = simulate(config)
+        baseline = simulate(config, adapter=adapter)
         violations = [_invariant_dict(item) for item in baseline.invariants if not item.passed]
         finding: Mapping[str, object] | None = None
         if violations:

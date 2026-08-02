@@ -44,7 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     parser = argparse.ArgumentParser(
         prog="phaseprobe",
-        description="Find bounded simulation transitions and turn them into deterministic tests.",
+        description="Find bounded simulation transitions and turn them into regression tests.",
     )
     parser.add_argument("--version", action="version", version=f"phaseprobe {__version__}")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -144,12 +144,20 @@ def _replay_command(args: argparse.Namespace) -> int:
         print(str(data["status"]))
         print()
         print(f"Model: {verification.model}")
+        print(f"Comparison mode: {verification.mode}")
         for comparison in verification.comparisons:
-            print(
-                f"{comparison['series']}: classification={comparison['classification_match']}, "
-                f"trace-hash={comparison['trace_hash_match']}, "
-                f"model-identity={comparison['model_identity_match']}"
-            )
+            if verification.mode == "exact":
+                print(
+                    f"{comparison['series']}: classification="
+                    f"{comparison['classification_match']}, "
+                    f"trace-hash={comparison['trace_hash_match']}, "
+                    f"model-identity={comparison['model_identity_match']}"
+                )
+            else:
+                matched = all(
+                    value is True for key, value in comparison.items() if key.endswith("_match")
+                )
+                print(f"{comparison['series']}: declared tolerances={matched}")
     return int(ExitCode.OK if verification.ok else ExitCode.POLICY_FAILED)
 
 
@@ -160,7 +168,7 @@ def _generate_command(args: argparse.Namespace) -> int:
         raise ConfigurationError("fixture and output directory must be paths")
     generated = generate_regression_test(fixture, output_directory)
     data: dict[str, object] = {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "status": "PYTEST REGRESSION GENERATED",
         "test": str(generated.test_path),
         "fixture": str(generated.fixture_path),

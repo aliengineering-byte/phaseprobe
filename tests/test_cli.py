@@ -94,7 +94,7 @@ def test_json_output_is_versioned(tmp_path: Path, capsys: pytest.CaptureFixture[
     )
     assert code == ExitCode.OK
     payload = json.loads(capsys.readouterr().out)
-    assert payload["schema_version"] == "1.0"
+    assert payload["schema_version"] == "2.0"
     assert payload["artifacts"]["replay"].endswith("replay.json")
 
 

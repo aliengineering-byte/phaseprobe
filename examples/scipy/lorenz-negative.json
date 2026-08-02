@@ -1,0 +1,54 @@
+{
+  "schema_version": "2.0",
+  "model": "lorenz-scipy",
+  "seed": 23,
+  "adapter": {
+    "kind": "python",
+    "module": "phaseprobe.examples.scipy_models",
+    "factory": "lorenz_adapter",
+    "options": {
+      "identity": "phaseprobe-lorenz-scipy-v1",
+      "state_names": ["x", "y", "z"],
+      "initial_state": [1.0, 1.0, 1.0],
+      "t_span": [0.0, 5.0],
+      "t_eval": {"kind": "linspace", "points": 401},
+      "method": "DOP853",
+      "rtol": 1e-9,
+      "atol": 1e-12,
+      "max_step": 0.05,
+      "vectorized": false,
+      "dense_output": false
+    }
+  },
+  "parameters": {"sigma": 10.0, "rho": 28.0, "beta": 2.6666666666666665},
+  "simulation": {"trace_cap": 401, "hard_state_limit": 1000.0},
+  "tolerances": {"state_bound": 100.0},
+  "perturb": {
+    "dimension": "x",
+    "start": 1e-9,
+    "stop": 1e-5,
+    "points": 5,
+    "scale": "log",
+    "predicate": "finite-time-divergence",
+    "divergence_threshold": 1.0,
+    "refine_iterations": 0,
+    "repeatability": 2
+  },
+  "replay": {
+    "mode": "tolerance",
+    "state_atol": 1e-6,
+    "state_rtol": 1e-6,
+    "observable_atol": {"x": 1e-6, "y": 1e-6, "z": 1e-6, "radius": 2e-6},
+    "invariant_measure_atol": 1e-6,
+    "endpoint_time_atol": 1e-10,
+    "event_time_atol": 1e-8,
+    "retained_grid_time_atol": 1e-12,
+    "max_unmatched_points": 0,
+    "expected_solver_success": true,
+    "require_classifier": true,
+    "require_invariants": true
+  },
+  "classification_rule": "Short-window negative control for the same finite-time trajectory-distance predicate.",
+  "refinement_rule": "Evaluate only the declared bounded perturbation grid.",
+  "invalid_state_policy": "Abort on solver failure, invalid shape, NaN, infinity, or the declared hard-state-limit breach."
+}

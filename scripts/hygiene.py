@@ -68,7 +68,16 @@ def tracked_files() -> list[Path]:
     """Use Git's index when available; otherwise walk only public project content."""
 
     completed = subprocess.run(
-        ["git", "-C", str(ROOT), "ls-files", "-z"],
+        [
+            "git",
+            "-C",
+            str(ROOT),
+            "ls-files",
+            "--cached",
+            "--others",
+            "--exclude-standard",
+            "-z",
+        ],
         check=False,
         capture_output=True,
     )

@@ -22,7 +22,7 @@ $ python -m pytest -q tests/generated
 
 [![Terminal demo: scan, refine, replay, and generated pytest](assets/demo-static.png)](assets/demo.gif)
 
-No API key, LLM, GPU, Docker, account, telemetry, network connection, or hosted service is required at runtime. PhaseProbe 0.1.0 has no third-party runtime dependencies.
+No API key, LLM, GPU, Docker, account, telemetry, network connection, or hosted service is required at runtime. PhaseProbe's base installation has no third-party runtime dependencies; NumPy and SciPy are isolated in the optional `scipy` extra.
 
 ## Five-minute quick start
 
@@ -41,6 +41,63 @@ Replace `<run-id>` with the directory printed by `scan`. The scan returns `0` wh
 
 The quick-start evidence is empirical: the built-in classifier finds a finite-time period-2/period-4 bracket for the logistic map, performs bounded binary refinement, repeats both endpoints, saves trace hashes and a versioned fixture, and generates a fixed pytest template. It does not claim an exact bifurcation point.
 
+## Use with SciPy
+
+SciPy integrates trajectories. PhaseProbe searches declared dimensions, preserves qualitative
+boundaries, and creates regressions. PhaseProbe is an independent project and does not imply
+endorsement by SciPy.
+
+Five-minute path:
+
+[![SciPy demo: solve_ivp evidence, tolerance replay, and generated pytest](assets/scipy-demo-static.png)](assets/scipy-demo.gif)
+
+The verified command transcript is [assets/scipy-demo-session.txt](assets/scipy-demo-session.txt),
+with a self-contained [HTML example report](examples/scipy/report.html).
+
+```bash
+python -m pip install "phaseprobe[scipy]"
+phaseprobe perturb --config examples/scipy/lorenz.json
+phaseprobe check --config examples/scipy/predator-prey.json
+phaseprobe replay .phaseprobe/runs/<run-id>/replay.json
+phaseprobe generate-test .phaseprobe/runs/<run-id>/replay.json
+python -m pytest -q tests/generated
+```
+
+The Lorenz command searches a declared initial-`x` perturbation and reports only finite-time
+divergence evidence. `examples/scipy/lorenz-negative.json` is its short-window negative control.
+The predator–prey command checks the declared first integral with tightly resolved DOP853 settings;
+`examples/scipy/predator-prey-coarse.json` deliberately fails the same policy with loose RK23
+settings.
+
+For a direct Python API:
+
+```python
+from phaseprobe import run_perturbation
+from phaseprobe.adapters.scipy import SolveIVPAdapter
+
+adapter = SolveIVPAdapter(
+    name="lorenz-scipy",
+    identity="my-lorenz-v1",
+    rhs=lorenz_rhs,
+    state_names=("x", "y", "z"),
+    initial_state=(1.0, 1.0, 1.0),
+    t_span=(0.0, 25.0),
+    t_eval=1001,
+    method="DOP853",
+    rtol=1e-9,
+    atol=1e-12,
+    max_step=0.05,
+    classifier=classify_lorenz,
+)
+
+outcome = run_perturbation(adapter, config)
+```
+
+JSON CLI configurations name an absolute dotted Python module and factory. Running, replaying, or
+generating from that configuration executes the selected trusted Python code; validation alone
+does not import it. See [the audited contract](docs/SCIPY_SOLVE_IVP_AUDIT.md),
+[architecture](ARCHITECTURE.md), and [security boundary](SECURITY.md).
+
 ## Commands
 
 | command | job | normal success |
@@ -48,7 +105,7 @@ The quick-start evidence is empirical: the built-in classifier finds a finite-ti
 | `scan` | Bounded one-dimensional parameter scan, adjacent class-change detection, and stable bracket refinement | Finding or no finding, exit `0` |
 | `perturb` | Baseline/perturbed twin runs over bounded initial-state changes | Finding or no finding, exit `0` |
 | `check` | Execute a declared configuration policy for CI | Exit `1` only when policy fails |
-| `replay` | Validate fixture integrity and re-execute model, parameters, seed, initial state, tolerances, and retention | Matching class and exact retained trace hashes |
+| `replay` | Validate fixture integrity and re-execute model, parameters, seed, initial state, tolerances, and retention | Declared `exact` or `tolerance` comparison passes |
 | `generate-test` | Validate and copy a fixture into a non-extensible pytest template | Executable test under `tests/generated/` |
 | `report` | Regenerate terminal, versioned JSON, and self-contained offline HTML evidence | Local report files |
 
@@ -105,7 +162,7 @@ Model names used for generated test paths are sanitized. The generated source co
 
 The evidence-backed audit is in [PRIOR_ART.md](PRIOR_ART.md).
 
-## Adapter interface
+## Adapter interfaces
 
 Adapters implement a small typed protocol:
 
@@ -124,6 +181,26 @@ class ModelAdapter(Protocol):
 
 The explicit serializable state tuple makes bounded perturbation, invalid-value detection, trace hashing, and replay straightforward. See [ARCHITECTURE.md](ARCHITECTURE.md) for extension guidance.
 
+Whole-trajectory solvers use the optional protocol instead of a fake step loop:
+
+```python
+class TrajectoryAdapter(Protocol):
+    name: str
+    identity: str
+    dimensions: tuple[str, ...]
+    replay_mode: Literal["exact", "tolerance"]
+
+    def initial_state(self, config, seed): ...
+    def simulate(self, initial_state, parameters, config, seed): ...
+    def observe(self, trace): ...
+    def classify(self, trace, tolerances): ...
+    def invariants(self, trace, parameters, tolerances): ...
+    def configuration(self): ...
+```
+
+`SolveIVPAdapter` records the explicit identity plus a digest of serializable numerical settings.
+It never serializes or claims to securely hash arbitrary callable source.
+
 ## Scientific scope
 
 PhaseProbe uses these terms deliberately:
@@ -137,12 +214,13 @@ PhaseProbe uses these terms deliberately:
 - invalid integration: NaN, infinity, overflow, state-shape mismatch, or hard bound breach;
 - solver failure: the step method could not advance a valid state.
 
-The Lorenz example reports `finite-time divergence rate`; it does not compute or claim a Lyapunov exponent. “Smallest” always means smallest found within the declared bounded search. Read [SCIENTIFIC_METHODS.md](SCIENTIFIC_METHODS.md) and [LIMITATIONS.md](LIMITATIONS.md).
+The Lorenz examples report `finite-time divergence rate`; they do not compute or claim a Lyapunov exponent. Adaptive SciPy replay is tolerance-based, never exact deterministic replay. “Smallest” always means smallest found within the declared bounded search. Read [SCIENTIFIC_METHODS.md](SCIENTIFIC_METHODS.md) and [LIMITATIONS.md](LIMITATIONS.md).
 
 ## Development
 
 ```bash
 python -m pip install -e ".[dev]"
+python -m pip install -e ".[dev,scipy]"  # include optional adapter tests
 python -m ruff format --check .
 python -m ruff check .
 python -m mypy src tests

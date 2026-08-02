@@ -1,5 +1,26 @@
 # Scientific methods
 
+## SciPy trajectory evidence
+
+SciPy integrates trajectories. PhaseProbe searches declared dimensions, preserves qualitative
+boundaries, and creates regressions. `SolveIVPAdapter` passes a real-valued RHS, controlled
+evaluation grid, method, `rtol`, scalar/vector `atol`, `max_step`, vectorization declaration, and
+optional named events to the public `solve_ivp` API. It records termination status/message and
+evaluation counts before PhaseProbe applies model-specific observables, classification, invariants,
+search, policy, artifacts, and replay.
+
+Adaptive error control is local and method-specific. A successful solver status is necessary but
+not sufficient evidence that a scientific invariant or qualitative policy is resolved. The
+predator–prey examples therefore compare a tightly resolved DOP853 run with a deliberately loose
+RK23 control. The Lorenz examples use a controlled common `t_eval` grid for twin-distance evidence
+and report only finite-time divergence within the declared window.
+
+Tolerance replay compares retained times/states, named numeric observables, classifier outcome,
+invariant results and stored thresholds, endpoint/event evidence, and expected solver success.
+Environment and solver evidence are retained for interpretation. Artifact hashes still detect
+fixture tampering, but an adaptive trace hash is not required to match across supported platforms.
+See [the complete SciPy audit](docs/SCIPY_SOLVE_IVP_AUDIT.md).
+
 PhaseProbe 0.1.0 produces bounded computational evidence. It does not perform formal verification, model validation against observations, or computer-assisted proof.
 
 ## Execution record

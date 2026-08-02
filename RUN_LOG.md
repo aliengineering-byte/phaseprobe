@@ -102,3 +102,82 @@ These are single-environment observations, not cross-machine benchmark claims.
 - No formal trademark or legal clearance was performed.
 - No PyPI or npm publication was attempted or authorized.
 - The tagged release remains immutable; post-tag release and fresh-public-clone evidence is therefore external to this tracked pre-release log.
+
+# v0.2.0 SciPy integration log (append-only)
+
+This section records the PhaseProbe 0.2.0 SciPy integration and release mission. Entries are
+appended in execution order. Measurements are observations from the named environment, not
+cross-platform performance claims.
+
+## 2026-08-02 pre-edit baseline
+
+- Project root: the public PhaseProbe repository root; neighboring projects were not inspected.
+- Branch and HEAD: clean `main` tracking `origin/main` at
+  `92ed4a14c3eecca82fc990c2cf2eb28b6a3b6a82`.
+- Remote: public `https://github.com/aliengineering-byte/phaseprobe.git` for fetch and push.
+- Latest and only tag: annotated `v0.1.0`; local and public remote dereference to
+  `92ed4a14c3eecca82fc990c2cf2eb28b6a3b6a82`. The tag object is
+  `4e12bbbafc1215cea6f369f8e3e34a50ffe1f77c` and will not be changed.
+- Environment: CPython 3.12.13, Windows, PhaseProbe 0.1.0 from the project virtual environment.
+- Base wheel audit: `phaseprobe-0.1.0-py3-none-any.whl` has no unconditional `Requires-Dist`;
+  only the existing `dev` and `demo` extras declare packages.
+- Formatting: 28 files already formatted; exit 0 in 2.046 seconds.
+- Ruff lint: all checks passed; exit 0 in 0.189 seconds.
+- Strict mypy: no issues in 25 source files; exit 0 in 10.707 seconds.
+- Tests and branch coverage: 38 passed in 70.47 seconds (73.153 seconds wall time), with
+  87.92% total coverage and the 85% gate met.
+- Generated pytest: 1 passed in 1.13 seconds (1.844 seconds wall time).
+- Package build: wheel and source archive built successfully in 27.571 seconds.
+- Link inventory: 15 Markdown files and 22 external links; no missing local links; exit 0 in
+  0.410 seconds.
+- Hygiene: 77 tracked public files scanned; no secret, personal-data, or file-over-1-MiB issue;
+  exit 0 in 0.226 seconds.
+- All eight existing examples completed in 14.358 seconds: logistic positive found a
+  qualitative transition (exit 0, 11.172 seconds); logistic negative found none (exit 0,
+  0.263 seconds); Lorenz positive found finite-time trajectory divergence (exit 0,
+  0.862 seconds); Lorenz negative found none (exit 0, 0.422 seconds); predator–prey positive
+  passed policy (exit 0, 0.319 seconds); predator–prey negative failed its declared policy as
+  expected (exit 1, 0.226 seconds); toggle positive found a qualitative state switch (exit 0,
+  0.602 seconds); toggle negative found none (exit 0, 0.413 seconds).
+- Release target: `v0.2.0`, because `v0.1.0` remains the latest public release tag.
+- Release tooling observation: `gh` is not installed in this environment. No global tool or Git
+  configuration was changed.
+
+## 2026-08-02 integration and pre-release validation
+
+- Current upstream audit: SciPy 1.18.0 documentation and the public `solve_ivp` implementation
+  were reviewed, including solver methods, evaluation grids, events, vectorization, tolerances,
+  termination status, invalid values, complex-domain caveats, and cross-platform replay limits.
+  Only the public `scipy.integrate.solve_ivp` API is used.
+- Compatibility policy: the optional extra declares NumPy `>=1.23.5,<2.5` and SciPy
+  `>=1.15,<1.19`. The lock resolves supported SciPy releases for Python 3.10 through 3.14 while
+  the base wheel retains no unconditional runtime dependency.
+- Architecture: the existing step-level protocol remains intact. A backward-compatible
+  trajectory protocol dispatches one bounded adaptive solve while sharing scan, perturbation,
+  invariant, artifact, reporting, and test-generation machinery.
+- Replay: schema 2.0 adds declared `exact` and `tolerance` modes and retains integrity hashes.
+  Existing schema 1.0 fixtures remain readable and use exact trace comparison; adaptive SciPy
+  fixtures record tolerances and environment evidence without claiming byte-identical replay.
+- Installed-wheel core validation: 46 tests passed and three SciPy-dependent tests skipped in an
+  isolated environment where NumPy and SciPy were absent. Core import, CLI execution, exact
+  replay, and the dependency audit passed.
+- Installed-wheel SciPy validation: SciPy 1.18.0 and NumPy 2.4.6 were installed solely through
+  the wheel's `scipy` extra. The predator-prey policy and tolerance replay passed, and all three
+  committed generated pytest regressions passed.
+- Full validation: 81 tests passed in 109.91 seconds with 86.37% branch coverage, exceeding the
+  unchanged 85% gate. Formatting covered 40 files; Ruff passed; strict mypy passed for 35 source
+  files; the lockfile check passed.
+- All 12 built-in and SciPy positive/negative example commands matched their declared exit
+  outcomes in 35.815 seconds. The SciPy Lorenz positive case found finite-time trajectory
+  divergence; its short-window control found none. The tight DOP853 predator-prey configuration
+  passed its first-integral policy, while the deliberately coarse RK23 configuration failed it.
+- Instrumented Windows measurements using the real CPython 3.12 process: the base logistic-map
+  quick start completed in 10.962 seconds with a 19.92 MiB peak working set; the SciPy Lorenz
+  example completed in 7.830 seconds with a 73.54 MiB peak working set. These are observations of
+  this host, not performance guarantees.
+- Documentation/demo validation: the verified terminal transcript, GIF, static fallback, HTML
+  report, replay fixtures, generated tests, five-minute quick start, and unposted upstream
+  proposal are present. Link inventory passed for 17 Markdown files and 29 external links.
+- Public-tree hygiene: 101 tracked or untracked candidate files were scanned; no secret,
+  personal-data, workstation-path, PDF, or file-over-1-MiB issue was found. `git diff --check`
+  passed. Neighboring projects and global Git configuration were not touched.

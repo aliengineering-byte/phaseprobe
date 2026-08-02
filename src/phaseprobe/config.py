@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from importlib import resources
@@ -11,7 +12,10 @@ from typing import Any, cast
 
 from phaseprobe.errors import ConfigurationError
 
-CONFIG_SCHEMA_VERSION = "1.0"
+CONFIG_SCHEMA_VERSION = "2.0"
+SUPPORTED_CONFIG_SCHEMA_VERSIONS = frozenset({"1.0", CONFIG_SCHEMA_VERSION})
+_DOTTED_MODULE = re.compile(r"^[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*$")
+_IDENTIFIER = re.compile(r"^[A-Za-z_]\w*$")
 
 
 def canonical_json(value: object) -> str:
@@ -71,13 +75,26 @@ def parse_config(text: str, source: str) -> ProbeConfig:
         raise ConfigurationError(f"invalid JSON in {source}: {exc}") from exc
     data = _as_object(parsed, source)
     version = data.get("schema_version")
-    if version != CONFIG_SCHEMA_VERSION:
+    if version not in SUPPORTED_CONFIG_SCHEMA_VERSIONS:
         raise ConfigurationError(
-            f"unsupported configuration schema {version!r}; expected {CONFIG_SCHEMA_VERSION!r}"
+            f"unsupported configuration schema {version!r}; supported versions are "
+            f"{sorted(SUPPORTED_CONFIG_SCHEMA_VERSIONS)!r}"
         )
     config = ProbeConfig(data=data, source=source)
     _ = config.model
     _ = config.seed
+    adapter = data.get("adapter")
+    if adapter is not None:
+        values = _as_object(adapter, "adapter")
+        kind = values.get("kind")
+        module = values.get("module")
+        factory = values.get("factory")
+        if kind != "python":
+            raise ConfigurationError("adapter.kind must be 'python'")
+        if not isinstance(module, str) or _DOTTED_MODULE.fullmatch(module) is None:
+            raise ConfigurationError("adapter.module must be an absolute dotted Python module name")
+        if not isinstance(factory, str) or _IDENTIFIER.fullmatch(factory) is None:
+            raise ConfigurationError("adapter.factory must be a Python identifier")
     return config
 
 
