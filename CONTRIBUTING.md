@@ -14,7 +14,14 @@ python -m mypy src tests
 python -m pytest --cov=phaseprobe
 ```
 
-Before a pull request, also run `python -m build`, install the wheel into a clean environment, execute the logistic quick start, run `python scripts/check_links.py`, and run `python scripts/hygiene.py`.
+Install `.[dev,scipy]` to run the optional trajectory-adapter suite. Core-only jobs intentionally
+install `.[dev]` and run tests marked `not scipy`; SciPy jobs run the full suite. The committed
+`uv.lock` resolves the supported Python-dependent SciPy lines reproducibly.
+
+Before a pull request, also run `python -m build`, `python -m twine check dist/*`,
+`python scripts/audit_package.py`, install the base wheel and SciPy extra into separate clean
+environments, execute both quick starts, run `python scripts/check_links.py`, and run
+`python scripts/hygiene.py`.
 
 ## Scientific changes
 
@@ -26,6 +33,10 @@ New adapters or classifiers must include:
 - an explanation of what the classifier establishes and what it does not;
 - replay and generated-test coverage;
 - solver-refinement or convergence evidence where numerical integration matters.
+
+Trajectory adapters must serialize explicit configuration without callable source, select an
+honest exact/tolerance replay mode, and test solver failure, invalid values, retention, and any
+supported event behavior.
 
 Do not call finite-time divergence a Lyapunov exponent, a numerical bracket an exact bifurcation point, or a bounded search result globally minimal.
 

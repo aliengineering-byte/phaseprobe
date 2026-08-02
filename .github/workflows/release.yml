@@ -16,12 +16,17 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: python -m pip install --upgrade pip build
+      - run: python -m pip install --upgrade pip build twine
       - run: python -m build
-      - run: python -m venv .tag-smoke
-      - run: .tag-smoke/bin/python -m pip install dist/*.whl
-      - run: .tag-smoke/bin/python -m phaseprobe --version
-      - run: .tag-smoke/bin/python -m phaseprobe scan --example logistic
+      - run: python -m twine check dist/*
+      - run: python scripts/audit_package.py
+      - run: python -m venv .cache/tag-core-smoke
+      - run: .cache/tag-core-smoke/bin/python -m pip install dist/*.whl
+      - run: .cache/tag-core-smoke/bin/python -m phaseprobe --version
+      - run: .cache/tag-core-smoke/bin/python -m phaseprobe scan --example logistic
+      - run: python -m venv .cache/tag-scipy-smoke
+      - run: .cache/tag-scipy-smoke/bin/python -m pip install "$(find dist -name '*.whl')[scipy]"
+      - run: .cache/tag-scipy-smoke/bin/python -m phaseprobe check --config examples/scipy/predator-prey.json
       - run: python scripts/hygiene.py
       - uses: actions/upload-artifact@v4
         with:

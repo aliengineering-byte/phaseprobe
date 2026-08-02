@@ -8,4 +8,4 @@
 - Required validation: `python -m ruff format --check .`, `python -m ruff check .`, `python -m mypy src tests`, `python -m pytest`, `python -m build`, packed-install smoke test, quick start, examples, replay, generated-test execution, privacy/secret/large-file scans, and clean Git status.
 - Do not fabricate tests, performance, scientific evidence, benchmark results, users, or adoption claims.
 - Do not publish to PyPI without separate authorization.
-- Release only after all local gates pass; then use the authenticated `aliengineering-byte` GitHub account, pass CI, tag an annotated `v0.1.0`, create the release, and verify a fresh unauthenticated clone.
+- Release only after all local gates pass; then use the authenticated `aliengineering-byte` GitHub account, pass CI, create the intended new annotated semantic-version tag and release, and verify a fresh unauthenticated clone. Never rewrite a published tag.

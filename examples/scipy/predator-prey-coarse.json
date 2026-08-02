@@ -1,0 +1,45 @@
+{
+  "schema_version": "2.0",
+  "model": "predator-prey-scipy",
+  "seed": 31,
+  "adapter": {
+    "kind": "python",
+    "module": "phaseprobe.examples.scipy_models",
+    "factory": "predator_prey_adapter",
+    "options": {
+      "identity": "phaseprobe-predator-prey-scipy-v1",
+      "state_names": ["prey", "predator"],
+      "initial_state": [10.0, 5.0],
+      "t_span": [0.0, 30.0],
+      "t_eval": {"kind": "linspace", "points": 301},
+      "method": "RK23",
+      "rtol": 0.01,
+      "atol": 0.0001,
+      "max_step": 2.0,
+      "vectorized": false,
+      "dense_output": false
+    }
+  },
+  "parameters": {"alpha": 1.1, "beta": 0.4, "delta": 0.1, "gamma": 0.4},
+  "simulation": {"trace_cap": 301, "hard_state_limit": 1000.0},
+  "tolerances": {"invariant_drift": 0.001},
+  "check": {"analysis": "invariants"},
+  "policy": {"forbid_findings": true, "require_finding": false, "require_invariants": true},
+  "replay": {
+    "mode": "tolerance",
+    "state_atol": 1e-5,
+    "state_rtol": 1e-5,
+    "observable_atol": {"prey": 1e-5, "predator": 1e-5, "first_integral": 1e-5},
+    "invariant_measure_atol": 1e-5,
+    "endpoint_time_atol": 1e-9,
+    "event_time_atol": 1e-7,
+    "retained_grid_time_atol": 1e-12,
+    "max_unmatched_points": 0,
+    "expected_solver_success": true,
+    "require_classifier": true,
+    "require_invariants": true
+  },
+  "classification_rule": "Deliberately loose/coarse negative control; positivity alone does not satisfy the invariant policy.",
+  "refinement_rule": "Compare its first-integral drift with the tight DOP853 configuration.",
+  "invalid_state_policy": "Abort on solver failure, invalid shape, NaN, infinity, or non-finite observables."
+}

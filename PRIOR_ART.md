@@ -1,6 +1,6 @@
 # Prior art and name audit
 
-Last verified: 2026-08-01.
+Last verified: 2026-08-02.
 
 PhaseProbe is positioned narrowly: simulation-specific transition discovery, bounded counterexample minimization, deterministic replay, and regression-test generation. It is not a replacement for a simulator, ODE solver, sensitivity-analysis package, formal bifurcation package, property-based testing framework, or rigorous proof tool.
 
@@ -15,7 +15,7 @@ Evidence: [GitHub repository search](https://api.github.com/search/repositories?
 | tool | primary job | target user | existing strength | overlap | remaining gap | PhaseProbe differentiation | last verified date |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | [Hypothesis](https://hypothesis.readthedocs.io/en/latest/) | Property-based test generation and shrinking | Python developers | Broad input strategies, edge-case generation, mature shrinking | Search and counterexample reduction | Does not provide a simulation trace/classification/replay artifact workflow by itself | Domain-specific bounded scans, trace evidence, replay fixtures, and generated pytest tests | 2026-08-01 |
-| [SciPy `solve_ivp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html) | Numerical initial-value integration | Scientific Python users | Multiple adaptive ODE solvers and error controls | Produces trajectories for models | Does not classify regimes or turn discovered transitions into replayable regressions | PhaseProbe can sit above an adapter/solver; v0.1.0 examples use a documented fixed-step method to keep runtime dependencies at zero | 2026-08-01 |
+| [SciPy `solve_ivp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html) | Numerical initial-value integration | Scientific Python users | Multiple adaptive ODE solvers, dense output, events, and error controls | Produces trajectories for models | Does not classify regimes or turn discovered transitions into integrity-protected tolerance fixtures and pytest regressions | Optional trajectory adapter keeps SciPy responsible for integration while PhaseProbe owns bounded search, evidence, tolerance replay, and test materialization | 2026-08-02 |
 | [Mesa](https://mesa.readthedocs.io/stable/) | Agent-based model construction, execution, visualization, and analysis | Agent-based modelers | Rich ABM components and data collection | Simulation configuration and repeated runs | No focused transition-to-replay-to-pytest pipeline in the core job | Adapter-oriented testing layer, not an ABM framework | 2026-08-01 |
 | [NetLogo](https://docs.netlogo.org/) | Programmable multi-agent modeling environment | Researchers and educators | Mature modeling language, model library, and interactive environment | Parameter sweeps and qualitative behavior exploration | Developer-facing Python fixture/test generation is not its central job | Headless local regression evidence for adapters | 2026-08-01 |
 | [cadCAD](https://cadcad.readthedocs.io/en/latest/) | Modeling complex adaptive and dynamical systems | System modelers | Structured generalized dynamical-system workflows | Parameterized simulation runs | No dedicated smallest-found transition fixture and pytest generation workflow | Testing pipeline around a small typed adapter | 2026-08-01 |
@@ -27,6 +27,9 @@ Evidence: [GitHub repository search](https://api.github.com/search/repositories?
 | [SALib](https://github.com/SALib/SALib) | Global sensitivity analysis | Modelers and uncertainty-quantification practitioners | Sobol, Morris, FAST, and other established methods | Bounded input exploration and sensitivity | Sensitivity indices answer a different question from finding a reproducible class boundary | Searches a declared qualitative predicate and records the smallest case found in that search | 2026-08-01 |
 | [Exploratory metamorphic testing](https://pmc.ncbi.nlm.nih.gov/articles/PMC7252536/) | Test relations among related scientific-simulation inputs and outputs | Scientific software teams | Addresses test-oracle difficulty using relations across executions | Baseline/perturbed twin runs and invariants | A research method, not a packaged transition/replay/pytest workflow | Implements a narrow, deterministic operational workflow without claiming to subsume metamorphic testing | 2026-08-01 |
 | General record/replay tools (for example [VCR](https://github.com/vcr/vcr)) | Capture and replay external interactions | Application developers | Stable deterministic fixtures for I/O interactions | Fixture integrity and replay concepts | External-call cassettes do not re-execute a scientific model from model/config/seed/tolerances | Re-executes supported simulation adapters and verifies trace/classification hashes | 2026-08-01 |
+
+The 0.2.0 SciPy integration does not change this boundary: SciPy integrates trajectories;
+PhaseProbe searches declared dimensions, preserves qualitative boundaries, and creates regressions.
 
 ## Differentiation boundary
 

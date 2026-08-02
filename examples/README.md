@@ -1,5 +1,33 @@
 # Deterministic examples
 
+The original eight examples use dependency-free fixed-step adapters and remain unchanged. The
+`scipy/` directory adds genuine public `scipy.integrate.solve_ivp` trajectories through the
+optional extra:
+
+```bash
+python -m pip install "phaseprobe[scipy]"
+phaseprobe perturb --config examples/scipy/lorenz.json
+phaseprobe perturb --config examples/scipy/lorenz-negative.json
+phaseprobe check --config examples/scipy/predator-prey.json
+phaseprobe check --config examples/scipy/predator-prey-coarse.json
+```
+
+| SciPy configuration | declared evidence | expected exit |
+| --- | --- | --- |
+| `lorenz.json` | finite-time twin-trajectory distance crosses the declared threshold | 0 |
+| `lorenz-negative.json` | short-window negative control does not cross it | 0 |
+| `predator-prey.json` | tight DOP853 first-integral policy passes | 0 |
+| `predator-prey-coarse.json` | deliberately loose RK23 first-integral policy fails | 1 |
+
+All four use controlled evaluation grids, bounded retained traces, explicit solver settings, and
+tolerance replay. The predator–prey pair is refinement evidence: solver success alone is not
+treated as proof that the declared invariant accuracy was achieved. The Lorenz pair is finite-time
+divergence evidence only, not a Lyapunov exponent or global proof of chaos.
+
+The `adapter.module`/`adapter.factory` fields select trusted Python code in
+`phaseprobe.examples.scipy_models`. A run or replay executes that module; JSON validation does not.
+See [the solve_ivp audit](../docs/SCIPY_SOLVE_IVP_AUDIT.md).
+
 The `configs/` files are readable copies of the examples embedded in the wheel. All commands run without network access.
 
 ## Logistic map

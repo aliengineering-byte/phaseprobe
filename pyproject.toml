@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "phaseprobe"
-version = "0.1.0"
+version = "0.2.0"
 description = "Find reproducible qualitative simulation transitions and turn them into regression tests."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -29,6 +29,10 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
+scipy = [
+  "numpy>=1.23.5,<2.5",
+  "scipy>=1.15,<1.19",
+]
 dev = [
   "build==1.3.0",
   "mypy==1.17.1",
@@ -56,6 +60,7 @@ include = [
   "/src",
   "/tests",
   "/examples",
+  "/docs",
   "/scripts",
   "/README.md",
   "/LICENSE",
@@ -80,6 +85,7 @@ testpaths = ["tests"]
 markers = [
   "numerical: deterministic numerical validation",
   "integration: CLI, replay, packaging, or generated-test integration",
+  "scipy: requires the optional NumPy and SciPy dependencies",
 ]
 
 [tool.coverage.run]
@@ -95,6 +101,10 @@ python_version = "3.10"
 strict = true
 warn_unreachable = true
 mypy_path = "src"
+
+[[tool.mypy.overrides]]
+module = ["numpy", "numpy.*", "scipy", "scipy.*"]
+ignore_missing_imports = true
 
 [tool.ruff]
 target-version = "py310"

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PhaseProbe — CHECK POLICY PASSED</title>
+<style>
+:root { color-scheme: light dark; --ink:#16202a; --paper:#f7f4ed; --accent:#ef5b35; --cool:#167d8d; }
+* { box-sizing:border-box; }
+body { margin:0; font:16px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace; background:var(--paper); color:var(--ink); }
+main { max-width:1080px; margin:auto; padding:36px 24px 64px; }
+h1 { margin:.2rem 0; font-size:clamp(1.8rem,5vw,3.4rem); line-height:1.05; }
+.eyebrow { color:var(--cool); font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+.result { border-left:8px solid var(--accent); padding:18px 22px; background:#fff; box-shadow:0 10px 30px #16303b18; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; margin:22px 0; }
+.card { border:1px solid #16202a2c; border-radius:8px; padding:16px; background:#ffffffb8; }
+table { width:100%; border-collapse:collapse; margin:12px 0 24px; }
+th,td { padding:9px; border-bottom:1px solid #16202a2c; text-align:left; vertical-align:top; }
+pre { overflow:auto; padding:16px; border-radius:8px; background:#10232b; color:#eaf5f2; }
+.limit { border:1px solid #ef5b35; padding:14px; background:#fff4ef; }
+@media (prefers-color-scheme:dark) { body { --paper:#0f1b20; --ink:#eaf5f2; } .result,.card { background:#16272e; } .limit { background:#36221e; } }
+</style>
+</head>
+<body><main>
+<p class="eyebrow">PhaseProbe evidence report · schema 2.0</p>
+<section class="result"><h1>CHECK POLICY PASSED</h1><p>Model: <strong>predator-prey-scipy</strong></p></section>
+<section class="grid">
+<article class="card"><h2>Baseline</h2><p>positive-oscillation</p><p>Trace SHA-256: <code>b67250eb64257ffcb68dda5dc6101dccdc13576ee67caab191675add9df54ca6</code></p></article>
+<article class="card"><h2>Changed</h2><p>n/a</p><p>Trace SHA-256: <code>n/a</code></p></article>
+</section>
+<h2>Finding</h2><pre>{}</pre>
+<h2>Search and refinement history</h2>
+<table><thead><tr><th>Phase</th><th>Value / delta</th><th>Classification</th><th>Bracket</th></tr></thead><tbody><tr><td colspan="4">No refinement history for this check.</td></tr></tbody></table>
+<h2>Configuration</h2><pre>{
+  &quot;adapter&quot;: {
+    &quot;factory&quot;: &quot;predator_prey_adapter&quot;,
+    &quot;kind&quot;: &quot;python&quot;,
+    &quot;module&quot;: &quot;phaseprobe.examples.scipy_models&quot;,
+    &quot;options&quot;: {
+      &quot;atol&quot;: [
+        1e-12,
+        1e-12
+      ],
+      &quot;dense_output&quot;: false,
+      &quot;identity&quot;: &quot;phaseprobe-predator-prey-scipy-v1&quot;,
+      &quot;initial_state&quot;: [
+        10.0,
+        5.0
+      ],
+      &quot;max_step&quot;: 0.05,
+      &quot;method&quot;: &quot;DOP853&quot;,
+      &quot;rtol&quot;: 1e-10,
+      &quot;state_names&quot;: [
+        &quot;prey&quot;,
+        &quot;predator&quot;
+      ],
+      &quot;t_eval&quot;: {
+        &quot;kind&quot;: &quot;linspace&quot;,
+        &quot;points&quot;: 1201
+      },
+      &quot;t_span&quot;: [
+        0.0,
+        30.0
+      ],
+      &quot;vectorized&quot;: false
+    }
+  },
+  &quot;check&quot;: {
+    &quot;analysis&quot;: &quot;invariants&quot;
+  },
+  &quot;classification_rule&quot;: &quot;Require both populations to remain positive over the declared retained grid.&quot;,
+  &quot;invalid_state_policy&quot;: &quot;Abort on solver failure, invalid shape, NaN, infinity, or non-finite observables.&quot;,
+  &quot;model&quot;: &quot;predator-prey-scipy&quot;,
+  &quot;parameters&quot;: {
+    &quot;alpha&quot;: 1.1,
+    &quot;beta&quot;: 0.4,
+    &quot;delta&quot;: 0.1,
+    &quot;gamma&quot;: 0.4
+  },
+  &quot;policy&quot;: {
+    &quot;forbid_findings&quot;: true,
+    &quot;require_finding&quot;: false,
+    &quot;require_invariants&quot;: true
+  },
+  &quot;refinement_rule&quot;: &quot;DOP853 with tight tolerances and a bounded maximum step; compare with the committed coarse negative control.&quot;,
+  &quot;replay&quot;: {
+    &quot;endpoint_time_atol&quot;: 1e-10,
+    &quot;event_time_atol&quot;: 1e-08,
+    &quot;expected_solver_success&quot;: true,
+    &quot;invariant_measure_atol&quot;: 1e-08,
+    &quot;max_unmatched_points&quot;: 0,
+    &quot;mode&quot;: &quot;tolerance&quot;,
+    &quot;observable_atol&quot;: {
+      &quot;first_integral&quot;: 1e-08,
+      &quot;predator&quot;: 1e-07,
+      &quot;prey&quot;: 1e-07
+    },
+    &quot;require_classifier&quot;: true,
+    &quot;require_invariants&quot;: true,
+    &quot;retained_grid_time_atol&quot;: 1e-12,
+    &quot;state_atol&quot;: 1e-07,
+    &quot;state_rtol&quot;: 1e-07
+  },
+  &quot;schema_version&quot;: &quot;2.0&quot;,
+  &quot;seed&quot;: 31,
+  &quot;simulation&quot;: {
+    &quot;hard_state_limit&quot;: 1000.0,
+    &quot;trace_cap&quot;: 1201
+  },
+  &quot;tolerances&quot;: {
+    &quot;invariant_drift&quot;: 1e-08
+  }
+}</pre>
+<h2>Replay and generated test</h2><p>The run directory contains a versioned <code>replay.json</code> fixture with declared <strong>tolerance</strong> comparison. Artifact SHA-256 integrity is retained in both modes. The <code>generate-test</code> command validates and copies that fixture into a fixed pytest template.</p>
+<h2>Scientific limitations</h2><p class="limit">This report contains bounded numerical evidence. It does not prove global minimality, an exact bifurcation point, chaos, a formal Lyapunov exponent, or scientific validity outside the declared model, integration settings, search space, and tolerances.</p>
+</main></body></html>

@@ -1,14 +1,20 @@
 # Roadmap
 
-## After 0.1.0
+## Delivered in 0.2.0
 
-- External adapter discovery with an explicit safe registration mechanism.
+- Explicit dotted-module/factory adapter loading with validation separated from code execution.
+- Optional trajectory-level protocol and public `solve_ivp` adapter without a fake step loop.
+- Exact and tolerance replay modes with v1 fixture compatibility and artifact integrity hashes.
+- Genuine SciPy Lorenz and predator-prey positive/negative examples and generated regressions.
+- Separate core-only and SciPy-extra Windows/Linux CI coverage.
+
+## After 0.2.0
+
 - Non-monotonic multi-dimension search: coarse exploration, stable bracket discovery, local refinement, repeatability, and delta debugging.
-- Optional classification/tolerance replay modes alongside strict trace hashes.
 - Adapter-provided solver convergence studies and paired step-size evidence.
 - Streaming trace summaries for expensive simulators without weakening the configured cap.
 - JSON Schema publication and compatibility migration tooling.
 - JUnit/SARIF policy output for CI annotation.
-- More reference adapters, accepted only with positive cases, negative controls, invalid-integration tests, and primary citations.
+- Additional reference adapters only when they validate a missing capability such as stiff/event-heavy systems, with positive cases, negative controls, invalid-integration tests, and primary citations.
 
 PyPI publication is intentionally absent and requires separate authorization.

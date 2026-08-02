@@ -88,6 +88,7 @@ def html_report(data: Mapping[str, object]) -> str:
     finding = _mapping(data.get("finding"))
     history = _sequence(data.get("history"))
     config = _mapping(data.get("configuration"))
+    replay_mode = html.escape(str(baseline.get("replay_mode", "exact")))
 
     history_rows: list[str] = []
     for item in history:
@@ -148,7 +149,7 @@ pre {{ overflow:auto; padding:16px; border-radius:8px; background:#10232b; color
 <h2>Search and refinement history</h2>
 <table><thead><tr><th>Phase</th><th>Value / delta</th><th>Classification</th><th>Bracket</th></tr></thead><tbody>{"".join(history_rows)}</tbody></table>
 <h2>Configuration</h2><pre>{config_json}</pre>
-<h2>Replay and generated test</h2><p>The run directory contains a versioned <code>replay.json</code> fixture. The <code>generate-test</code> command validates and copies that fixture into a fixed pytest template.</p>
+<h2>Replay and generated test</h2><p>The run directory contains a versioned <code>replay.json</code> fixture with declared <strong>{replay_mode}</strong> comparison. Artifact SHA-256 integrity is retained in both modes. The <code>generate-test</code> command validates and copies that fixture into a fixed pytest template.</p>
 <h2>Scientific limitations</h2><p class="limit">{html.escape(limitations)}</p>
 </main></body></html>
 """
