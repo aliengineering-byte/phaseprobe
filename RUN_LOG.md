@@ -181,3 +181,18 @@ cross-platform performance claims.
 - Public-tree hygiene: 101 tracked or untracked candidate files were scanned; no secret,
   personal-data, workstation-path, PDF, or file-over-1-MiB issue was found. `git diff --check`
   passed. Neighboring projects and global Git configuration were not touched.
+
+## 2026-08-02 pre-release CI portability repair
+
+- The first GitHub matrix run exposed two CI-environment defects: strict mypy could not resolve
+  NumPy type aliases in the intentionally SciPy-free environment, and top-level packed-smoke
+  virtual environments were correctly treated as unignored public candidates by the expanded
+  hygiene scanner.
+- Static checks were moved into the full SciPy matrix, where the optional type namespaces are
+  installed on both operating systems and all supported Python versions. The core matrix still
+  executes all dependency-free tests and examples without NumPy or SciPy.
+- Packed-smoke environments now live under the ignored `.cache` directory in CI and tagged
+  release validation. No hygiene exclusion was weakened, and the 85% full-install branch-coverage
+  gate remains unchanged.
+- Feature-branch push triggering was removed because pull-request triggering already covers the
+  branch; this prevents duplicate full matrix runs while retaining main and release-branch pushes.

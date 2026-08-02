@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, "release/**", "codex/**"]
+    branches: [main, "release/**"]
   pull_request:
   workflow_dispatch:
 
@@ -26,9 +26,6 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e ".[dev]"
-      - run: python -m ruff format --check .
-      - run: python -m ruff check .
-      - run: python -m mypy src tests
       - run: python -m pytest -m "not scipy"
       - run: python -m phaseprobe --version
       - run: python -m phaseprobe scan --example logistic-negative
@@ -49,6 +46,9 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e ".[dev,scipy]"
+      - run: python -m ruff format --check .
+      - run: python -m ruff check .
+      - run: python -m mypy src tests
       - run: python -m pytest --cov=phaseprobe --cov-report=term
       - run: python -m phaseprobe perturb --config examples/scipy/lorenz-negative.json
       - run: python -m phaseprobe check --config examples/scipy/predator-prey.json
@@ -65,14 +65,14 @@ jobs:
       - run: python -m build
       - run: python -m twine check dist/*
       - run: python scripts/audit_package.py
-      - run: python -m venv .packed-smoke
-      - run: .packed-smoke/bin/python -m pip install dist/*.whl
-      - run: .packed-smoke/bin/python -m phaseprobe --version
-      - run: .packed-smoke/bin/python -m phaseprobe scan --example logistic-negative
-      - run: .packed-smoke/bin/python -c "import importlib.util; assert importlib.util.find_spec('numpy') is None; assert importlib.util.find_spec('scipy') is None"
-      - run: python -m venv .scipy-smoke
-      - run: .scipy-smoke/bin/python -m pip install "$(find dist -name '*.whl')[scipy]"
-      - run: .scipy-smoke/bin/python -m phaseprobe check --config examples/scipy/predator-prey.json
+      - run: python -m venv .cache/packed-smoke
+      - run: .cache/packed-smoke/bin/python -m pip install dist/*.whl
+      - run: .cache/packed-smoke/bin/python -m phaseprobe --version
+      - run: .cache/packed-smoke/bin/python -m phaseprobe scan --example logistic-negative
+      - run: .cache/packed-smoke/bin/python -c "import importlib.util; assert importlib.util.find_spec('numpy') is None; assert importlib.util.find_spec('scipy') is None"
+      - run: python -m venv .cache/scipy-smoke
+      - run: .cache/scipy-smoke/bin/python -m pip install "$(find dist -name '*.whl')[scipy]"
+      - run: .cache/scipy-smoke/bin/python -m phaseprobe check --config examples/scipy/predator-prey.json
       - run: python scripts/check_links.py
       - run: python scripts/hygiene.py
       - uses: actions/upload-artifact@v4
