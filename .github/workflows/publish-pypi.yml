@@ -90,13 +90,15 @@ jobs:
           expected_version, wheel_path, sdist_path = sys.argv[1:]
 
           with zipfile.ZipFile(wheel_path) as archive:
+              wheel_names = set(archive.namelist())
               metadata_names = [
-                  name for name in archive.namelist() if name.endswith(".dist-info/METADATA")
+                  name for name in wheel_names if name.endswith(".dist-info/METADATA")
               ]
               assert len(metadata_names) == 1, metadata_names
               wheel_metadata = email.message_from_bytes(archive.read(metadata_names[0]))
 
           with tarfile.open(sdist_path, "r:gz") as archive:
+              sdist_names = {member.name for member in archive.getmembers()}
               metadata_members = [
                   member
                   for member in archive.getmembers()
@@ -106,6 +108,28 @@ jobs:
               extracted = archive.extractfile(metadata_members[0])
               assert extracted is not None
               sdist_metadata = email.message_from_bytes(extracted.read())
+
+          runtime_files = {
+              "phaseprobe/data/examples/logistic-negative.json",
+              "phaseprobe/data/examples/logistic-scan.json",
+              "phaseprobe/data/examples/lorenz-negative.json",
+              "phaseprobe/data/examples/lorenz-perturb.json",
+              "phaseprobe/data/examples/predator-prey-check.json",
+              "phaseprobe/data/examples/predator-prey-negative.json",
+              "phaseprobe/data/examples/scipy-lorenz-negative.json",
+              "phaseprobe/data/examples/scipy-lorenz.json",
+              "phaseprobe/data/examples/scipy-predator-prey-coarse.json",
+              "phaseprobe/data/examples/scipy-predator-prey.json",
+              "phaseprobe/data/examples/toggle-negative.json",
+              "phaseprobe/data/examples/toggle-perturb.json",
+              "phaseprobe/py.typed",
+          }
+          assert not runtime_files - wheel_names, sorted(runtime_files - wheel_names)
+          sdist_roots = {name.split("/", 1)[0] for name in sdist_names if "/" in name}
+          assert len(sdist_roots) == 1, sorted(sdist_roots)
+          sdist_root = next(iter(sdist_roots))
+          sdist_runtime_files = {f"{sdist_root}/src/{name}" for name in runtime_files}
+          assert not sdist_runtime_files - sdist_names, sorted(sdist_runtime_files - sdist_names)
 
           for metadata in (wheel_metadata, sdist_metadata):
               assert metadata["Name"] == "phaseprobe"

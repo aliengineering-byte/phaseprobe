@@ -20,13 +20,10 @@ jobs:
       - run: python -m build
       - run: python -m twine check dist/*
       - run: python scripts/audit_package.py
-      - run: python -m venv .cache/tag-core-smoke
-      - run: .cache/tag-core-smoke/bin/python -m pip install dist/*.whl
-      - run: .cache/tag-core-smoke/bin/python -m phaseprobe --version
-      - run: .cache/tag-core-smoke/bin/python -m phaseprobe scan --example logistic
-      - run: python -m venv .cache/tag-scipy-smoke
-      - run: .cache/tag-scipy-smoke/bin/python -m pip install "$(find dist -name '*.whl')[scipy]"
-      - run: .cache/tag-scipy-smoke/bin/python -m phaseprobe check --config examples/scipy/predator-prey.json
+      - run: >-
+          python scripts/verify_artifacts.py
+          --dist-dir dist
+          --work-root "${RUNNER_TEMP}/phaseprobe tagged artifact gate"
       - run: python scripts/hygiene.py
       - uses: actions/upload-artifact@v4
         with:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from importlib import resources
 from pathlib import Path
 
 import pytest
@@ -51,6 +52,12 @@ def test_all_built_in_examples_are_versioned_json() -> None:
         json.loads(canonical_json(config.data))
 
 
+def test_built_in_registry_matches_packaged_json_resources() -> None:
+    package = resources.files("phaseprobe.data.examples")
+    packaged = {item.name for item in package.iterdir() if item.name.endswith(".json")}
+    assert set(EXAMPLE_FILES.values()) == packaged
+
+
 @pytest.mark.parametrize(
     ("name", "source_name"),
     [
@@ -60,9 +67,7 @@ def test_all_built_in_examples_are_versioned_json() -> None:
         ("scipy-predator-prey-coarse", "predator-prey-coarse.json"),
     ],
 )
-def test_packaged_scipy_examples_match_source_checkout_copies(
-    name: str, source_name: str
-) -> None:
+def test_packaged_scipy_examples_match_source_checkout_copies(name: str, source_name: str) -> None:
     source = Path(__file__).resolve().parents[1] / "examples" / "scipy" / source_name
     assert load_example(name).data == load_config(source).data
 
