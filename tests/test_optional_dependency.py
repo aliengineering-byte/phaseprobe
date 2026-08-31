@@ -6,11 +6,13 @@ import json
 import os
 import subprocess
 import sys
+from importlib import metadata
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
+from phaseprobe import __version__
 from phaseprobe.adapters.loader import load_configured_adapter
 from phaseprobe.config import parse_config
 from phaseprobe.errors import ConfigurationError
@@ -35,7 +37,11 @@ def _isolated(command: str) -> subprocess.CompletedProcess[str]:
 def test_core_imports_without_site_packages_or_scipy() -> None:
     completed = _isolated("import phaseprobe; print(phaseprobe.__version__)")
     assert completed.returncode == 0, completed.stderr
-    assert completed.stdout.strip() == "0.2.0"
+    assert completed.stdout.strip() == __version__
+
+
+def test_distribution_and_module_versions_match() -> None:
+    assert metadata.version("phaseprobe") == __version__
 
 
 def test_scipy_adapter_import_has_actionable_optional_extra_error() -> None:

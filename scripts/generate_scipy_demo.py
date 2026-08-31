@@ -85,8 +85,8 @@ def main() -> int:
                 "-m",
                 "phaseprobe",
                 "perturb",
-                "--config",
-                str(EXAMPLES / "lorenz.json"),
+                "--example",
+                "scipy-lorenz",
                 "--output-root",
                 str(output_root / "lorenz"),
             ],
@@ -98,8 +98,8 @@ def main() -> int:
                 "-m",
                 "phaseprobe",
                 "check",
-                "--config",
-                str(EXAMPLES / "predator-prey.json"),
+                "--example",
+                "scipy-predator-prey",
                 "--output-root",
                 str(output_root / "predator-prey"),
             ],
@@ -130,8 +130,8 @@ def main() -> int:
         )
         transcript = "\n\n".join(
             (
-                "$ phaseprobe perturb --config examples/scipy/lorenz.json\n" + lorenz_output,
-                "$ phaseprobe check --config examples/scipy/predator-prey.json\n" + predator_output,
+                "$ phaseprobe perturb --example scipy-lorenz\n" + lorenz_output,
+                "$ phaseprobe check --example scipy-predator-prey\n" + predator_output,
                 "$ phaseprobe replay .phaseprobe/runs/<run-id>/replay.json\n" + replay_output,
                 "$ phaseprobe generate-test .phaseprobe/runs/<run-id>/replay.json\n"
                 + generate_output,
@@ -156,13 +156,13 @@ def main() -> int:
         shutil.copyfile(predator_run / "report.html", EXAMPLES / "report.html")
 
         selected = [
-            "$ phaseprobe perturb --config examples/scipy/lorenz.json",
+            "$ phaseprobe perturb --example scipy-lorenz",
             "FINITE-TIME TRAJECTORY DIVERGENCE FOUND",
             "Evidence: finite-time-divergence",
             "Repeatable: true",
             "Scope: declared finite search and 25-unit window",
             "",
-            "$ phaseprobe check --config examples/scipy/predator-prey.json",
+            "$ phaseprobe check --example scipy-predator-prey",
             "CHECK POLICY PASSED",
             "Method: DOP853 | rtol=1e-10 | vector atol=1e-12",
             "First-integral drift: 3.997e-15 <= 1e-8",

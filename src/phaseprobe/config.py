@@ -133,10 +133,7 @@ def _installed_version() -> str:
 
 def _example_help() -> str:
     choices = ", ".join(sorted(EXAMPLE_FILES))
-    return (
-        f"valid built-in examples are: {choices}; "
-        "run 'phaseprobe <command> --help' to list them"
-    )
+    return f"valid built-in examples are: {choices}; run 'phaseprobe <command> --help' to list them"
 
 
 def load_example(name: str) -> ProbeConfig:

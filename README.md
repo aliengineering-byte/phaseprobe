@@ -5,7 +5,7 @@
 Maintaining a simulation is risky when a tiny parameter or initial-condition change can cross a qualitative boundary while ordinary numeric assertions still look plausible. PhaseProbe runs a bounded, deterministic search, records exactly what it tested, and emits an offline report plus an executable pytest regression.
 
 ```console
-$ pip install phaseprobe
+$ pip install phaseprobe pytest
 $ phaseprobe scan --example logistic
 QUALITATIVE TRANSITION FOUND
 
@@ -29,6 +29,7 @@ No API key, LLM, GPU, Docker, account, telemetry, network connection, or hosted 
 ```bash
 pip install phaseprobe
 pip install "phaseprobe[scipy]"
+pip install pytest  # needed only to execute a generated regression test
 ```
 
 ## Five-minute quick start
@@ -36,7 +37,7 @@ pip install "phaseprobe[scipy]"
 Requires Python 3.10 or newer on Windows or Linux.
 
 ```bash
-pip install phaseprobe
+pip install phaseprobe pytest
 phaseprobe scan --example logistic
 phaseprobe replay .phaseprobe/runs/<run-id>/replay.json
 phaseprobe generate-test .phaseprobe/runs/<run-id>/replay.json
@@ -59,22 +60,34 @@ Five-minute path:
 [![SciPy demo: solve_ivp evidence, tolerance replay, and generated pytest](assets/scipy-demo-static.png)](assets/scipy-demo.gif)
 
 The verified command transcript is [assets/scipy-demo-session.txt](assets/scipy-demo-session.txt),
-with a self-contained [HTML example report](examples/scipy/report.html).
+with a self-contained [HTML example report](examples/scipy/report.html). The following path starts
+from a clean environment and does not require a source checkout:
 
 ```bash
-python -m pip install "phaseprobe[scipy]"
-phaseprobe perturb --config examples/scipy/lorenz.json
-phaseprobe check --config examples/scipy/predator-prey.json
+python -m venv .venv
+# Linux: source .venv/bin/activate
+# Windows PowerShell: .venv\Scripts\Activate.ps1
+python -m pip install "phaseprobe[scipy]" "pytest==8.4.1"
+phaseprobe perturb --example scipy-lorenz
+phaseprobe check --example scipy-predator-prey
 phaseprobe replay .phaseprobe/runs/<run-id>/replay.json
 phaseprobe generate-test .phaseprobe/runs/<run-id>/replay.json
 python -m pytest -q tests/generated
 ```
 
 The Lorenz command searches a declared initial-`x` perturbation and reports only finite-time
-divergence evidence. `examples/scipy/lorenz-negative.json` is its short-window negative control.
-The predator–prey command checks the declared first integral with tightly resolved DOP853 settings;
-`examples/scipy/predator-prey-coarse.json` deliberately fails the same policy with loose RK23
-settings.
+divergence evidence and prints `FINITE-TIME TRAJECTORY DIVERGENCE FOUND`. Its installed
+short-window control is `--example scipy-lorenz-negative`. The predator–prey command checks the
+declared first integral with tightly resolved DOP853 settings and prints `CHECK POLICY PASSED`;
+`--example scipy-predator-prey-coarse` deliberately fails the same policy with loose RK23 settings.
+Each successful command writes a replay fixture and offline report below
+`.phaseprobe/runs/<run-id>/`.
+
+Run `phaseprobe perturb --help` or `phaseprobe check --help` to list installed example names. A
+missing packaged resource reports the PhaseProbe version and resource name; reinstall the wheel or
+source archive rather than copying a checkout-relative path. Adaptive SciPy replay compares the
+declared state, observable, invariant, endpoint, event, and retained-grid tolerances—it does not
+promise bitwise trajectory equality across platforms or dependency versions.
 
 For a direct Python API:
 
@@ -113,7 +126,7 @@ does not import it. See [the audited contract](docs/SCIPY_SOLVE_IVP_AUDIT.md),
 | `perturb` | Baseline/perturbed twin runs over bounded initial-state changes | Finding or no finding, exit `0` |
 | `check` | Execute a declared configuration policy for CI | Exit `1` only when policy fails |
 | `replay` | Validate fixture integrity and re-execute model, parameters, seed, initial state, tolerances, and retention | Declared `exact` or `tolerance` comparison passes |
-| `generate-test` | Validate and copy a fixture into a non-extensible pytest template | Executable test under `tests/generated/` |
+| `generate-test` | Validate and copy a fixture into a non-extensible pytest template without conflicting overwrites | Executable test under `tests/generated/` |
 | `report` | Regenerate terminal, versioned JSON, and self-contained offline HTML evidence | Local report files |
 
 Common options:
@@ -121,6 +134,7 @@ Common options:
 ```console
 phaseprobe scan --config examples/configs/logistic-scan.json
 phaseprobe perturb --example lorenz --json
+phaseprobe perturb --example scipy-lorenz --json
 phaseprobe check --example predator-prey
 phaseprobe scan --example logistic --fail-on-finding
 ```
@@ -135,6 +149,8 @@ Exit codes are stable: `0` completed, `1` declared policy or explicit `--fail-on
 | Lorenz system | `phaseprobe perturb --example lorenz` | Small initial separation exceeds the declared finite-time trajectory-distance threshold | Short window plus unreachable threshold reports no finding | [Lorenz, 1963](https://journals.ametsoc.org/view/journals/atsc/20/2/1520-0469_1963_020_0130_dnf_2_0_co_2.xml) |
 | Predator–prey | `phaseprobe check --example predator-prey` | Refined RK4 step preserves the analytic first integral within tolerance | Coarse step fails the invariant-drift policy | [Lotka, 1920](https://doi.org/10.1073/pnas.6.7.410) |
 | Genetic toggle | `phaseprobe perturb --example toggle` | Bounded initial-state perturbation reaches the opposite dominant state | Smaller declared range stays in the baseline basin | [Gardner, Cantor & Collins, 2000](https://www.nature.com/articles/35002131) |
+| SciPy Lorenz | `phaseprobe perturb --example scipy-lorenz` | DOP853 twin trajectories cross the declared finite-time distance threshold | `--example scipy-lorenz-negative` shortens the window | [Lorenz, 1963](https://journals.ametsoc.org/view/journals/atsc/20/2/1520-0469_1963_020_0130_dnf_2_0_co_2.xml) |
+| SciPy predator–prey | `phaseprobe check --example scipy-predator-prey` | Tight DOP853 settings preserve the declared first integral tolerance | `--example scipy-predator-prey-coarse` deliberately fails | [Lotka, 1920](https://doi.org/10.1073/pnas.6.7.410) |
 
 Each configuration records the seed, fixed integration/iteration settings, tolerances, burn-in, observation window, classification rule, refinement rule, invalid-state policy, and trace cap. See [examples/README.md](examples/README.md) for equations and interpretation.
 
