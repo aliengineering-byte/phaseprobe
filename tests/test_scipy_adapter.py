@@ -17,6 +17,7 @@ import numpy as np
 import numpy.typing as npt
 import scipy
 
+import phaseprobe
 from phaseprobe import run_perturbation, run_simulation
 from phaseprobe.adapters.scipy import EventSpec, SolveIVPAdapter
 from phaseprobe.artifacts import write_artifacts
@@ -24,7 +25,7 @@ from phaseprobe.config import ProbeConfig, load_example, parse_config
 from phaseprobe.engine import ProbeOutcome, run_check, run_perturb, simulate
 from phaseprobe.errors import ConfigurationError, NumericalFailure
 from phaseprobe.generate import generate_regression_test
-from phaseprobe.replay import verify_replay
+from phaseprobe.replay import validate_fixture, verify_replay
 from phaseprobe.types import Parameters
 
 pytestmark = pytest.mark.scipy
@@ -362,6 +363,30 @@ def test_event_handling_retains_terminal_event_evidence() -> None:
     assert trace.final_state[0] == pytest.approx(0.5, rel=1e-8)
 
 
+def test_backward_time_directional_event_has_analytic_crossing_time() -> None:
+    def half_value(time: float, state: FloatArray, parameters: Parameters) -> float:
+        return float(state[0] - 0.5)
+
+    adapter = SolveIVPAdapter(
+        name="backward-exponential",
+        identity="backward-exponential-v1",
+        rhs=exponential_rhs,
+        state_names=("value",),
+        initial_state=(float(np.exp(-2.0)),),
+        t_span=(2.0, 0.0),
+        t_eval=41,
+        method="DOP853",
+        rtol=1e-10,
+        atol=1e-12,
+        max_step=0.05,
+        events=(EventSpec("half-value", half_value, terminal=True, direction=1),),
+    )
+    trace = adapter.simulate(adapter.initial_state({}, 0), {"rate": 1.0}, {}, 0)
+    assert trace.status == 1
+    assert trace.metadata["termination_time"] == pytest.approx(np.log(2.0), rel=1e-9)
+    assert trace.final_state[0] == pytest.approx(0.5, rel=1e-9)
+
+
 def test_invalid_initial_state_and_nan_rhs_are_rejected() -> None:
     with pytest.raises(ConfigurationError, match="finite"):
         SolveIVPAdapter(
@@ -471,6 +496,27 @@ def test_tolerance_replay_preserves_integrity_and_executes_generated_pytest(
 ) -> None:
     bundle = write_artifacts(predator_prey_tight, tmp_path / "runs")
     verification = verify_replay(bundle.replay_json)
+    fixture = validate_fixture(bundle.replay_json)
+    assert fixture["created_by"] == f"phaseprobe {phaseprobe.__version__}"
+    baseline = fixture["baseline"]
+    assert isinstance(baseline, dict)
+    metadata = baseline["execution_metadata"]
+    assert isinstance(metadata, dict)
+    assert {
+        "python_version",
+        "numpy_version",
+        "scipy_version",
+        "solver_method",
+        "rtol",
+        "atol",
+        "maximum_step",
+        "evaluation_grid",
+        "t_span",
+        "initial_state",
+        "parameters",
+        "event_configuration",
+        "seed",
+    } <= metadata.keys()
     assert verification.ok
     assert verification.mode == "tolerance"
     assert verification.comparisons[0]["state_tolerance_match"] is True
