@@ -20,7 +20,7 @@ import scipy
 from phaseprobe import run_perturbation, run_simulation
 from phaseprobe.adapters.scipy import EventSpec, SolveIVPAdapter
 from phaseprobe.artifacts import write_artifacts
-from phaseprobe.config import ProbeConfig, load_config, parse_config
+from phaseprobe.config import ProbeConfig, load_example, parse_config
 from phaseprobe.engine import ProbeOutcome, run_check, run_perturb, simulate
 from phaseprobe.errors import ConfigurationError, NumericalFailure
 from phaseprobe.generate import generate_regression_test
@@ -424,22 +424,22 @@ def test_engine_enforces_bounded_trace_retention() -> None:
 
 @pytest.fixture(scope="session")
 def lorenz_positive() -> ProbeOutcome:
-    return run_perturb(load_config(ROOT / "examples" / "scipy" / "lorenz.json"))
+    return run_perturb(load_example("scipy-lorenz"))
 
 
 @pytest.fixture(scope="session")
 def lorenz_negative() -> ProbeOutcome:
-    return run_perturb(load_config(ROOT / "examples" / "scipy" / "lorenz-negative.json"))
+    return run_perturb(load_example("scipy-lorenz-negative"))
 
 
 @pytest.fixture(scope="session")
 def predator_prey_tight() -> ProbeOutcome:
-    return run_check(load_config(ROOT / "examples" / "scipy" / "predator-prey.json"))
+    return run_check(load_example("scipy-predator-prey"))
 
 
 @pytest.fixture(scope="session")
 def predator_prey_coarse() -> ProbeOutcome:
-    return run_check(load_config(ROOT / "examples" / "scipy" / "predator-prey-coarse.json"))
+    return run_check(load_example("scipy-predator-prey-coarse"))
 
 
 def test_lorenz_positive_is_only_finite_time_divergence(lorenz_positive: ProbeOutcome) -> None:

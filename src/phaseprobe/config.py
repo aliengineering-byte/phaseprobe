@@ -6,7 +6,7 @@ import json
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
-from importlib import resources
+from importlib import metadata, resources
 from pathlib import Path
 from typing import Any, cast
 
@@ -117,7 +117,26 @@ EXAMPLE_FILES: Mapping[str, str] = {
     "predator-prey-negative": "predator-prey-negative.json",
     "toggle": "toggle-perturb.json",
     "toggle-negative": "toggle-negative.json",
+    "scipy-lorenz": "scipy-lorenz.json",
+    "scipy-lorenz-negative": "scipy-lorenz-negative.json",
+    "scipy-predator-prey": "scipy-predator-prey.json",
+    "scipy-predator-prey-coarse": "scipy-predator-prey-coarse.json",
 }
+
+
+def _installed_version() -> str:
+    try:
+        return metadata.version("phaseprobe")
+    except metadata.PackageNotFoundError:
+        return "unknown"
+
+
+def _example_help() -> str:
+    choices = ", ".join(sorted(EXAMPLE_FILES))
+    return (
+        f"valid built-in examples are: {choices}; "
+        "run 'phaseprobe <command> --help' to list them"
+    )
 
 
 def load_example(name: str) -> ProbeConfig:
@@ -125,8 +144,21 @@ def load_example(name: str) -> ProbeConfig:
 
     filename = EXAMPLE_FILES.get(name)
     if filename is None:
-        choices = ", ".join(sorted(EXAMPLE_FILES))
-        raise ConfigurationError(f"unknown example {name!r}; choose one of: {choices}")
-    package = resources.files("phaseprobe.data.examples")
-    text = package.joinpath(filename).read_text(encoding="utf-8")
-    return parse_config(text, f"built-in example {name}")
+        raise ConfigurationError(f"unknown example {name!r}; {_example_help()}")
+    try:
+        package = resources.files("phaseprobe.data.examples")
+        text = package.joinpath(filename).read_text(encoding="utf-8")
+    except (FileNotFoundError, ModuleNotFoundError, OSError) as exc:
+        raise ConfigurationError(
+            f"cannot load built-in example {name!r} for execution "
+            f"(PhaseProbe {_installed_version()}): packaged resource {filename!r} is unavailable; "
+            f"{_example_help()}. Reinstall PhaseProbe from a complete wheel or source archive."
+        ) from exc
+    try:
+        return parse_config(text, f"built-in example {name}")
+    except (ConfigurationError, UnicodeError) as exc:
+        raise ConfigurationError(
+            f"cannot load built-in example {name!r} for execution "
+            f"(PhaseProbe {_installed_version()}): packaged resource {filename!r} is malformed: "
+            f"{exc}; {_example_help()}"
+        ) from exc
