@@ -10,7 +10,7 @@ from pathlib import Path
 
 from phaseprobe import __version__
 from phaseprobe.artifacts import ArtifactBundle, write_artifacts
-from phaseprobe.config import EXAMPLE_FILES, ProbeConfig, load_config, load_example
+from phaseprobe.config import EXAMPLES, ProbeConfig, load_config, load_example
 from phaseprobe.engine import ProbeOutcome, run_check, run_perturb, run_scan
 from phaseprobe.errors import (
     ConfigurationError,
@@ -28,7 +28,7 @@ def _add_config_source(parser: argparse.ArgumentParser) -> None:
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--config", type=Path, help="versioned JSON configuration")
     source.add_argument(
-        "--example", choices=sorted(EXAMPLE_FILES), help="built-in deterministic example"
+        "--example", choices=sorted(EXAMPLES), help="built-in deterministic example"
     )
     parser.add_argument(
         "--output-root",

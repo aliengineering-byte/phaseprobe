@@ -1,4 +1,4 @@
-$ phaseprobe perturb --config examples/scipy/lorenz.json
+$ phaseprobe perturb --example scipy-lorenz
 FINITE-TIME TRAJECTORY DIVERGENCE FOUND
 
 Model: lorenz-scipy
@@ -10,12 +10,12 @@ Baseline regime: bounded-finite-window
 Changed regime: bounded-finite-window
 Invariant violations: 0
 Repeatable: true
-Replay: <repository>/.cache/phaseprobe-scipy-demo-uqyijm6y/runs/lorenz/20260802T175927Z-786e1809/replay.json
+Replay: <repository>/.cache/phaseprobe-scipy-demo-4sai_vv1/runs/lorenz/20260831T174342Z-7fcc5f8d/replay.json
 
 Scope: Smallest reproducible perturbation found within the declared finite search; not a proof of global minimality.
-HTML report: <repository>/.cache/phaseprobe-scipy-demo-uqyijm6y/runs/lorenz/20260802T175927Z-786e1809/report.html
+HTML report: <repository>/.cache/phaseprobe-scipy-demo-4sai_vv1/runs/lorenz/20260831T174342Z-7fcc5f8d/report.html
 
-$ phaseprobe check --config examples/scipy/predator-prey.json
+$ phaseprobe check --example scipy-predator-prey
 CHECK POLICY PASSED
 
 Model: predator-prey-scipy
@@ -23,8 +23,8 @@ Baseline regime: positive-oscillation
 Changed regime: n/a
 Invariant violations: 0
 Repeatable: true
-Replay: <repository>/.cache/phaseprobe-scipy-demo-uqyijm6y/runs/predator-prey/20260802T175928Z-073e812d/replay.json
-HTML report: <repository>/.cache/phaseprobe-scipy-demo-uqyijm6y/runs/predator-prey/20260802T175928Z-073e812d/report.html
+Replay: <repository>/.cache/phaseprobe-scipy-demo-4sai_vv1/runs/predator-prey/20260831T174343Z-38b5e8de/replay.json
+HTML report: <repository>/.cache/phaseprobe-scipy-demo-4sai_vv1/runs/predator-prey/20260831T174343Z-38b5e8de/report.html
 
 $ phaseprobe replay .phaseprobe/runs/<run-id>/replay.json
 REPLAY VERIFIED
@@ -36,11 +36,11 @@ baseline: declared tolerances=True
 $ phaseprobe generate-test .phaseprobe/runs/<run-id>/replay.json
 PYTEST REGRESSION GENERATED
 
-Test: <repository>/.cache/phaseprobe-scipy-demo-uqyijm6y/generated/test_predator_prey_scipy_transition.py
-Replay fixture: <repository>/.cache/phaseprobe-scipy-demo-uqyijm6y/generated/fixtures/predator_prey_scipy-replay.json
+Test: <repository>/.cache/phaseprobe-scipy-demo-4sai_vv1/generated/test_predator_prey_scipy_transition.py
+Replay fixture: <repository>/.cache/phaseprobe-scipy-demo-4sai_vv1/generated/fixtures/predator_prey_scipy-replay.json
 
 $ python -m pytest -q tests/generated
 .                                                                        [100%]
-1 passed in 1.04s
+1 passed in 1.08s
 
-Measured demo run: lorenz=5.916s, predator-prey=1.397s, replay=1.343s, generate=1.300s, pytest=1.759s.
+Measured demo run: lorenz=6.285s, predator-prey=1.409s, replay=1.336s, generate=1.340s, pytest=1.814s.

@@ -44,8 +44,8 @@ plus solver configuration metadata; it does not hash or serialize callable sourc
 
 ```bash
 python -m pip install "phaseprobe[scipy]"
-phaseprobe perturb --config examples/scipy/lorenz.json
-phaseprobe check --config examples/scipy/predator-prey.json
+phaseprobe perturb --example scipy-lorenz
+phaseprobe check --example scipy-predator-prey
 phaseprobe replay .phaseprobe/runs/<run-id>/replay.json
 phaseprobe generate-test .phaseprobe/runs/<run-id>/replay.json
 ```
@@ -128,6 +128,9 @@ https://pypi.org/project/phaseprobe/
 
 Technical proposal and limitations:
 https://github.com/aliengineering-byte/phaseprobe/blob/v0.2.0/docs/upstream/SCIPY_INTEGRATION_PROPOSAL.md
+
+The release links above preserve the original 0.2.0 integration record. The installed-safe
+`--example scipy-*` commands shown here are included in the planned 0.2.1 packaging fix.
 
 I am not proposing to add PhaseProbe to SciPy core. I would value feedback on three points:
 

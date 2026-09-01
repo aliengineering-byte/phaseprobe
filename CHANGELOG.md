@@ -2,6 +2,27 @@
 
 All notable changes are documented here. PhaseProbe follows semantic versioning.
 
+## 0.2.1 — 2026-08-31
+
+- Fixed Issue #4: all four SciPy quick-start configurations now ship inside the importable
+  package in both wheel and source distribution and load through `importlib.resources` as the
+  `scipy-lorenz`, `scipy-lorenz-negative`, `scipy-predator-prey`, and
+  `scipy-predator-prey-coarse` built-in examples.
+- Preserved the four exact former `examples/scipy/` config paths as narrow compatibility aliases
+  when no file exists at the requested path. Existing user files take precedence; matching is
+  case-sensitive and separator-portable, with no fuzzy or basename fallback.
+- Added actionable, versioned diagnostics for missing or malformed built-in resources without
+  changing arbitrary config-path or built-in-example behavior.
+- Added Linux and Windows Python 3.12 release gates that build, inspect, install, and exercise the
+  wheel and sdist outside the checkout with `PYTHONPATH` removed. The gate runs scan, replay,
+  generated pytest, SciPy Lorenz, SciPy predator–prey, `pip check`, and a dependency-free base
+  wheel check.
+- Added a source-derived runtime-resource audit and the PEP 561 `py.typed` marker.
+- Generated regression creation is now idempotent for identical evidence and rejects conflicting
+  files instead of silently overwriting them.
+- Added an analytic backward-time directional-event check while preserving all solver defaults
+  and the existing tolerance-based adaptive replay contract.
+
 ## 0.2.0 — 2026-08-02
 
 - Added the backward-compatible `TrajectoryAdapter` protocol and shared engine dispatch; all v0.1

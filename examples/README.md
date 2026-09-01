@@ -2,15 +2,20 @@
 
 The original eight examples use dependency-free fixed-step adapters and remain unchanged. The
 `scipy/` directory adds genuine public `scipy.integrate.solve_ivp` trajectories through the
-optional extra:
+optional extra. Installed packages use the built-in names and do not require this source directory:
 
 ```bash
 python -m pip install "phaseprobe[scipy]"
-phaseprobe perturb --config examples/scipy/lorenz.json
-phaseprobe perturb --config examples/scipy/lorenz-negative.json
-phaseprobe check --config examples/scipy/predator-prey.json
-phaseprobe check --config examples/scipy/predator-prey-coarse.json
+phaseprobe perturb --example scipy-lorenz
+phaseprobe perturb --example scipy-lorenz-negative
+phaseprobe check --example scipy-predator-prey
+phaseprobe check --example scipy-predator-prey-coarse
 ```
+
+The four exact `--config examples/scipy/<filename>.json` forms in the table remain usable from an
+installed package: if the selected file exists, PhaseProbe reads it; otherwise the former relative
+path resolves to its matching packaged example. Matching is case-sensitive and does not fall back
+by basename. The `--example scipy-*` forms are preferred for new automation.
 
 | SciPy configuration | declared evidence | expected exit |
 | --- | --- | --- |

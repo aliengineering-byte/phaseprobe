@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import tarfile
@@ -10,6 +11,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DIST = ROOT / "dist"
+SOURCE_PACKAGE = ROOT / "src" / "phaseprobe"
+
+
+def expected_runtime_files() -> set[str]:
+    """Return every non-Python file that must survive both build targets."""
+
+    return {
+        path.relative_to(ROOT / "src").as_posix()
+        for path in SOURCE_PACKAGE.rglob("*")
+        if path.is_file() and path.suffix != ".py" and "__pycache__" not in path.parts
+    }
 
 
 def sha256(path: Path) -> str:
@@ -20,9 +32,9 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def main() -> int:
-    wheels = sorted(DIST.glob("phaseprobe-*.whl"))
-    sdists = sorted(DIST.glob("phaseprobe-*.tar.gz"))
+def main(dist: Path = DIST) -> int:
+    wheels = sorted(dist.glob("phaseprobe-*.whl"))
+    sdists = sorted(dist.glob("phaseprobe-*.tar.gz"))
     issues: list[str] = []
     if len(wheels) != 1 or len(sdists) != 1:
         issues.append("dist must contain exactly one PhaseProbe wheel and one source archive")
@@ -40,6 +52,10 @@ def main() -> int:
         else:
             metadata = archive.read(metadata_names[0]).decode("utf-8")
         wheel_members = len(names)
+    runtime_files = expected_runtime_files()
+    missing_wheel_runtime = sorted(runtime_files.difference(names))
+    if missing_wheel_runtime:
+        issues.append(f"wheel is missing runtime files: {missing_wheel_runtime}")
     requirements = [
         line.removeprefix("Requires-Dist: ")
         for line in metadata.splitlines()
@@ -57,6 +73,16 @@ def main() -> int:
         issues.append("scipy extra does not declare SciPy")
     with tarfile.open(sdist, "r:gz") as archive:
         source_names = archive.getnames()
+    source_roots = {name.split("/", 1)[0] for name in source_names if "/" in name}
+    if len(source_roots) != 1:
+        issues.append(f"sdist must contain one top-level directory: {sorted(source_roots)}")
+        missing_sdist_runtime = sorted(runtime_files)
+    else:
+        source_root = next(iter(source_roots))
+        expected_sdist_runtime = {f"{source_root}/src/{name}" for name in runtime_files}
+        missing_sdist_runtime = sorted(expected_sdist_runtime.difference(source_names))
+    if missing_sdist_runtime:
+        issues.append(f"sdist is missing package runtime files: {missing_sdist_runtime}")
     forbidden = [
         name
         for name in source_names
@@ -69,6 +95,9 @@ def main() -> int:
         "schema_version": "1.0",
         "status": "PASS" if not issues else "FAIL",
         "base_runtime_dependencies": unconditional,
+        "expected_runtime_files": sorted(runtime_files),
+        "missing_wheel_runtime_files": missing_wheel_runtime,
+        "missing_sdist_runtime_files": missing_sdist_runtime,
         "scipy_extra_requirements": scipy_requirements,
         "wheel": {
             "name": wheel.name,
@@ -89,4 +118,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dist-dir", type=Path, default=DIST)
+    arguments = parser.parse_args()
+    raise SystemExit(main(arguments.dist_dir.resolve()))

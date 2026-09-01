@@ -19,6 +19,9 @@ Tolerance replay compares retained times/states, named numeric observables, clas
 invariant results and stored thresholds, endpoint/event evidence, and expected solver success.
 Environment and solver evidence are retained for interpretation. Artifact hashes still detect
 fixture tampering, but an adaptive trace hash is not required to match across supported platforms.
+The adapter validation suite checks an exponential system with an analytic terminal crossing in
+both forward and backward integration directions; this validates event plumbing, not exhaustive
+root detection between adaptive internal steps.
 See [the complete SciPy audit](docs/SCIPY_SOLVE_IVP_AUDIT.md).
 
 PhaseProbe 0.1.0 produces bounded computational evidence. It does not perform formal verification, model validation against observations, or computer-assisted proof.

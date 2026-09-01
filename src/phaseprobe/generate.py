@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -23,6 +22,17 @@ def _safe_name(value: object) -> str:
     return candidate[:64] or "model"
 
 
+def _reject_conflict(path: Path, expected: bytes, description: str) -> bool:
+    if not path.exists():
+        return True
+    if not path.is_file() or path.read_bytes() != expected:
+        raise FileExistsError(
+            f"refusing to overwrite existing {description} {path}; "
+            "choose another --output-directory"
+        )
+    return False
+
+
 def generate_regression_test(fixture: Path, output_directory: Path) -> GeneratedTest:
     """Validate evidence, copy its fixture, and emit a non-extensible pytest template."""
 
@@ -33,11 +43,8 @@ def generate_regression_test(fixture: Path, output_directory: Path) -> Generated
             "replay fixture does not reproduce; refusing to generate a regression test"
         )
     model_name = _safe_name(payload.get("model"))
-    output_directory.mkdir(parents=True, exist_ok=True)
     fixture_directory = output_directory / "fixtures"
-    fixture_directory.mkdir(exist_ok=True)
     copied_fixture = fixture_directory / f"{model_name}-replay.json"
-    shutil.copyfile(fixture, copied_fixture)
     test_path = output_directory / f"test_{model_name}_transition.py"
     baseline = payload.get("baseline")
     metadata = baseline.get("execution_metadata") if isinstance(baseline, dict) else None
@@ -68,5 +75,14 @@ def test_{model_name}_transition_replays() -> None:
     result = verify_replay(FIXTURE)
     assert result.ok, result.as_dict()
 '''
-    test_path.write_text(source, encoding="utf-8", newline="\n")
+    fixture_bytes = fixture.read_bytes()
+    source_bytes = source.encode("utf-8")
+    write_fixture = _reject_conflict(copied_fixture, fixture_bytes, "replay fixture")
+    write_test = _reject_conflict(test_path, source_bytes, "generated pytest")
+    output_directory.mkdir(parents=True, exist_ok=True)
+    fixture_directory.mkdir(exist_ok=True)
+    if write_fixture:
+        copied_fixture.write_bytes(fixture_bytes)
+    if write_test:
+        test_path.write_bytes(source_bytes)
     return GeneratedTest(test_path=test_path, fixture_path=copied_fixture)

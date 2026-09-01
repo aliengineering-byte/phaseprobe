@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Immutable release tag (for example, v0.2.0)
+        description: Immutable release tag (for example, v0.2.1)
         required: true
         type: string
       version:
-        description: Expected package version (for example, 0.2.0)
+        description: Expected package version (for example, 0.2.1)
         required: true
         type: string
       commit:
@@ -90,13 +90,15 @@ jobs:
           expected_version, wheel_path, sdist_path = sys.argv[1:]
 
           with zipfile.ZipFile(wheel_path) as archive:
+              wheel_names = set(archive.namelist())
               metadata_names = [
-                  name for name in archive.namelist() if name.endswith(".dist-info/METADATA")
+                  name for name in wheel_names if name.endswith(".dist-info/METADATA")
               ]
               assert len(metadata_names) == 1, metadata_names
               wheel_metadata = email.message_from_bytes(archive.read(metadata_names[0]))
 
           with tarfile.open(sdist_path, "r:gz") as archive:
+              sdist_names = {member.name for member in archive.getmembers()}
               metadata_members = [
                   member
                   for member in archive.getmembers()
@@ -106,6 +108,20 @@ jobs:
               extracted = archive.extractfile(metadata_members[0])
               assert extracted is not None
               sdist_metadata = email.message_from_bytes(extracted.read())
+
+          sdist_roots = {name.split("/", 1)[0] for name in sdist_names if "/" in name}
+          assert len(sdist_roots) == 1, sorted(sdist_roots)
+          sdist_root = next(iter(sdist_roots))
+          source_prefix = f"{sdist_root}/src/phaseprobe/"
+          runtime_files = {
+              name.removeprefix(f"{sdist_root}/src/")
+              for name in sdist_names
+              if name.startswith(source_prefix)
+              and not name.endswith(".py")
+              and "__pycache__" not in name.split("/")
+          }
+          assert "phaseprobe/py.typed" in runtime_files
+          assert not runtime_files - wheel_names, sorted(runtime_files - wheel_names)
 
           for metadata in (wheel_metadata, sdist_metadata):
               assert metadata["Name"] == "phaseprobe"

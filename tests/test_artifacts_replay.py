@@ -53,6 +53,10 @@ def test_replay_rejects_tampering(artifact_run: Path) -> None:
 @pytest.mark.integration
 def test_generated_pytest_genuinely_executes(artifact_run: Path, tmp_path: Path) -> None:
     generated = generate_regression_test(artifact_run / "replay.json", tmp_path / "generated")
+    assert str(tmp_path) not in generated.test_path.read_text(encoding="utf-8")
+    assert (
+        generate_regression_test(artifact_run / "replay.json", tmp_path / "generated") == generated
+    )
     environment = {
         name: value
         for name, value in os.environ.items()
@@ -69,6 +73,15 @@ def test_generated_pytest_genuinely_executes(artifact_run: Path, tmp_path: Path)
     )
     assert completed.returncode == 0, completed.stdout + completed.stderr
     assert "1 passed" in completed.stdout
+
+
+def test_generated_pytest_refuses_conflicting_overwrite(artifact_run: Path, tmp_path: Path) -> None:
+    output_directory = tmp_path / "generated"
+    generated = generate_regression_test(artifact_run / "replay.json", output_directory)
+    generated.test_path.write_text("# user-owned test\n", encoding="utf-8")
+    with pytest.raises(FileExistsError, match="refusing to overwrite"):
+        generate_regression_test(artifact_run / "replay.json", output_directory)
+    assert generated.test_path.read_text(encoding="utf-8") == "# user-owned test\n"
 
 
 def test_html_report_is_self_contained_and_offline(artifact_run: Path) -> None:
