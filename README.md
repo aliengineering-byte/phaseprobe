@@ -75,6 +75,13 @@ phaseprobe generate-test .phaseprobe/runs/<run-id>/replay.json
 python -m pytest -q tests/generated
 ```
 
+PhaseProbe 0.2.1 also recognizes the former Issue #4 command
+`phaseprobe perturb --config examples/scipy/lorenz.json` when that relative file is absent and
+loads the corresponding packaged example. This compatibility is limited to the four former
+`examples/scipy/` paths: an existing file always takes precedence, matching is case-sensitive,
+both slash styles are accepted, and unrelated missing paths remain errors. New documentation and
+automation should use the installed-safe `--example scipy-*` names.
+
 The Lorenz command searches a declared initial-`x` perturbation and reports only finite-time
 divergence evidence and prints `FINITE-TIME TRAJECTORY DIVERGENCE FOUND`. Its installed
 short-window control is `--example scipy-lorenz-negative`. The predator–prey command checks the
@@ -84,10 +91,10 @@ Each successful command writes a replay fixture and offline report below
 `.phaseprobe/runs/<run-id>/`.
 
 Run `phaseprobe perturb --help` or `phaseprobe check --help` to list installed example names. A
-missing packaged resource reports the PhaseProbe version and resource name; reinstall the wheel or
-source archive rather than copying a checkout-relative path. Adaptive SciPy replay compares the
-declared state, observable, invariant, endpoint, event, and retained-grid tolerances—it does not
-promise bitwise trajectory equality across platforms or dependency versions.
+missing packaged resource reports the PhaseProbe version and resource name. Adaptive SciPy replay
+compares the declared state, observable, invariant, endpoint, event, and retained-grid
+tolerances—it does not promise bitwise trajectory equality across platforms or dependency
+versions.
 
 For a direct Python API:
 

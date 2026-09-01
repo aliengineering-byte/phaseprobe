@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from phaseprobe.config import (
-    EXAMPLE_FILES,
+    EXAMPLES,
     SUPPORTED_CONFIG_SCHEMA_VERSIONS,
     canonical_json,
     load_config,
@@ -46,7 +46,7 @@ def test_load_config_reports_missing_file(tmp_path: Path) -> None:
 
 
 def test_all_built_in_examples_are_versioned_json() -> None:
-    for name in EXAMPLE_FILES:
+    for name in EXAMPLES:
         config = load_example(name)
         assert config.data["schema_version"] in SUPPORTED_CONFIG_SCHEMA_VERSIONS
         json.loads(canonical_json(config.data))
@@ -55,21 +55,57 @@ def test_all_built_in_examples_are_versioned_json() -> None:
 def test_built_in_registry_matches_packaged_json_resources() -> None:
     package = resources.files("phaseprobe.data.examples")
     packaged = {item.name for item in package.iterdir() if item.name.endswith(".json")}
-    assert set(EXAMPLE_FILES.values()) == packaged
+    assert {example.filename for example in EXAMPLES.values()} == packaged
 
 
 @pytest.mark.parametrize(
-    ("name", "source_name"),
-    [
-        ("scipy-lorenz", "lorenz.json"),
-        ("scipy-lorenz-negative", "lorenz-negative.json"),
-        ("scipy-predator-prey", "predator-prey.json"),
-        ("scipy-predator-prey-coarse", "predator-prey-coarse.json"),
-    ],
+    "name", [name for name, example in EXAMPLES.items() if example.legacy_config_path]
 )
-def test_packaged_scipy_examples_match_source_checkout_copies(name: str, source_name: str) -> None:
-    source = Path(__file__).resolve().parents[1] / "examples" / "scipy" / source_name
+def test_packaged_scipy_examples_match_source_checkout_copies(name: str) -> None:
+    legacy_path = EXAMPLES[name].legacy_config_path
+    assert legacy_path is not None
+    source = Path(__file__).resolve().parents[1] / legacy_path
     assert load_example(name).data == load_config(source).data
+
+
+@pytest.mark.parametrize(
+    "name", [name for name, example in EXAMPLES.items() if example.legacy_config_path]
+)
+def test_missing_former_scipy_path_loads_packaged_example(
+    name: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    legacy_path = EXAMPLES[name].legacy_config_path
+    assert legacy_path is not None
+    monkeypatch.chdir(tmp_path)
+    assert load_config(Path(legacy_path)).data == load_example(name).data
+    assert load_config(Path(legacy_path.replace("/", "\\"))).data == load_example(name).data
+
+
+def test_existing_former_scipy_path_takes_precedence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    legacy_path = EXAMPLES["scipy-lorenz"].legacy_config_path
+    assert legacy_path is not None
+    config_path = tmp_path / legacy_path
+    config_path.parent.mkdir(parents=True)
+    source = Path(__file__).resolve().parents[1] / "examples" / "configs" / "logistic-negative.json"
+    config_path.write_bytes(source.read_bytes())
+    monkeypatch.chdir(tmp_path)
+    loaded = load_config(Path(legacy_path))
+    assert loaded.model == "logistic-map"
+    assert Path(loaded.source) == Path(legacy_path)
+
+
+@pytest.mark.parametrize(
+    "missing_path",
+    ["elsewhere/lorenz.json", "examples/scipy/LORENZ.json", "lorenz.json"],
+)
+def test_missing_config_does_not_use_fuzzy_example_fallback(
+    missing_path: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(ConfigurationError, match="cannot read configuration"):
+        load_config(Path(missing_path))
 
 
 def test_unknown_example_is_actionable() -> None:

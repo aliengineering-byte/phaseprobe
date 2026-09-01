@@ -12,7 +12,10 @@ phaseprobe check --example scipy-predator-prey
 phaseprobe check --example scipy-predator-prey-coarse
 ```
 
-The equivalent `--config examples/scipy/*.json` paths are retained for source-checkout development.
+The four exact `--config examples/scipy/<filename>.json` forms in the table remain usable from an
+installed package: if the selected file exists, PhaseProbe reads it; otherwise the former relative
+path resolves to its matching packaged example. Matching is case-sensitive and does not fall back
+by basename. The `--example scipy-*` forms are preferred for new automation.
 
 | SciPy configuration | declared evidence | expected exit |
 | --- | --- | --- |

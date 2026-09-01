@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import posixpath
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -66,6 +67,36 @@ class ProbeConfig:
         return value
 
 
+@dataclass(frozen=True, slots=True)
+class ExampleResource:
+    """One packaged example and its optional former checkout-relative path."""
+
+    filename: str
+    legacy_config_path: str | None = None
+
+
+EXAMPLES: Mapping[str, ExampleResource] = {
+    "logistic": ExampleResource("logistic-scan.json"),
+    "logistic-negative": ExampleResource("logistic-negative.json"),
+    "lorenz": ExampleResource("lorenz-perturb.json"),
+    "lorenz-negative": ExampleResource("lorenz-negative.json"),
+    "predator-prey": ExampleResource("predator-prey-check.json"),
+    "predator-prey-negative": ExampleResource("predator-prey-negative.json"),
+    "toggle": ExampleResource("toggle-perturb.json"),
+    "toggle-negative": ExampleResource("toggle-negative.json"),
+    "scipy-lorenz": ExampleResource("scipy-lorenz.json", "examples/scipy/lorenz.json"),
+    "scipy-lorenz-negative": ExampleResource(
+        "scipy-lorenz-negative.json", "examples/scipy/lorenz-negative.json"
+    ),
+    "scipy-predator-prey": ExampleResource(
+        "scipy-predator-prey.json", "examples/scipy/predator-prey.json"
+    ),
+    "scipy-predator-prey-coarse": ExampleResource(
+        "scipy-predator-prey-coarse.json", "examples/scipy/predator-prey-coarse.json"
+    ),
+}
+
+
 def parse_config(text: str, source: str) -> ProbeConfig:
     """Parse and validate a versioned JSON configuration."""
 
@@ -103,25 +134,15 @@ def load_config(path: Path) -> ProbeConfig:
 
     try:
         text = path.read_text(encoding="utf-8")
+    except FileNotFoundError as exc:
+        normalized = posixpath.normpath(str(path).replace("\\", "/"))
+        for name, example in EXAMPLES.items():
+            if example.legacy_config_path == normalized:
+                return load_example(name)
+        raise ConfigurationError(f"cannot read configuration {path}: {exc}") from exc
     except OSError as exc:
         raise ConfigurationError(f"cannot read configuration {path}: {exc}") from exc
     return parse_config(text, str(path))
-
-
-EXAMPLE_FILES: Mapping[str, str] = {
-    "logistic": "logistic-scan.json",
-    "logistic-negative": "logistic-negative.json",
-    "lorenz": "lorenz-perturb.json",
-    "lorenz-negative": "lorenz-negative.json",
-    "predator-prey": "predator-prey-check.json",
-    "predator-prey-negative": "predator-prey-negative.json",
-    "toggle": "toggle-perturb.json",
-    "toggle-negative": "toggle-negative.json",
-    "scipy-lorenz": "scipy-lorenz.json",
-    "scipy-lorenz-negative": "scipy-lorenz-negative.json",
-    "scipy-predator-prey": "scipy-predator-prey.json",
-    "scipy-predator-prey-coarse": "scipy-predator-prey-coarse.json",
-}
 
 
 def _installed_version() -> str:
@@ -132,16 +153,17 @@ def _installed_version() -> str:
 
 
 def _example_help() -> str:
-    choices = ", ".join(sorted(EXAMPLE_FILES))
+    choices = ", ".join(sorted(EXAMPLES))
     return f"valid built-in examples are: {choices}; run 'phaseprobe <command> --help' to list them"
 
 
 def load_example(name: str) -> ProbeConfig:
     """Load one of the immutable examples embedded in the installed wheel."""
 
-    filename = EXAMPLE_FILES.get(name)
-    if filename is None:
+    example = EXAMPLES.get(name)
+    if example is None:
         raise ConfigurationError(f"unknown example {name!r}; {_example_help()}")
+    filename = example.filename
     try:
         package = resources.files("phaseprobe.data.examples")
         text = package.joinpath(filename).read_text(encoding="utf-8")

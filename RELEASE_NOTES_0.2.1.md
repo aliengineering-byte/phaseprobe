@@ -8,6 +8,16 @@ PhaseProbe 0.2.1 fixes GitHub Issue #4. The four SciPy quick-start configuration
 resources inside the `phaseprobe` package, are present in both wheel and sdist, and load through
 `importlib.resources` with installed-safe `--example scipy-*` names.
 
+The exact former relative config paths also remain compatible. PhaseProbe first reads an existing
+file; only when it is absent does one of the four case-sensitive `examples/scipy/` paths resolve to
+its matching packaged built-in. Both slash styles are accepted. Arbitrary missing paths, basename
+matches, and case variants remain errors. The reporter's original command therefore succeeds from
+an unrelated working directory after installation:
+
+```text
+phaseprobe perturb --config examples/scipy/lorenz.json
+```
+
 The reporter-confirmed scan, replay, generated pytest, Lorenz, and predator–prey behavior remains
 intact. This patch does not change solver methods, tolerances, thresholds, search bounds, replay
 semantics, or scientific claims.
@@ -22,6 +32,8 @@ from the repository root, where the relative paths existed, masking the release 
 
 ## Changes
 
+- Added narrow compatibility for the four former checkout-relative SciPy paths while preserving
+  existing-file precedence and rejecting fuzzy matches.
 - Added packaged SciPy Lorenz and predator–prey configurations plus positive/negative controls.
 - Added missing/malformed built-in-resource diagnostics with package version and valid choices.
 - Added source-derived wheel/sdist resource inventory checks and `py.typed`.
@@ -46,12 +58,12 @@ python scripts/check_links.py
 python scripts/hygiene.py
 ```
 
-## Prepared artifacts
+## Artifact provenance
 
-- Wheel: `dist/phaseprobe-0.2.1-py3-none-any.whl`
-- Wheel SHA-256: `619ad7131119f732d3a3923834ba496fae18d77953e0248c115eba813eafdb44`
-- Source distribution: `dist/phaseprobe-0.2.1.tar.gz`
-- Source distribution SHA-256: `e085776439d4370cd2a0b24083df0c3f7b8ddce8a7355d3dfb0e28931cec4348`
+Local review builds produce `dist/phaseprobe-0.2.1-py3-none-any.whl` and
+`dist/phaseprobe-0.2.1.tar.gz`. Their SHA-256 values identify only those exact local files; they are
+not permanent release hashes. The trusted publishing workflow rebuilds artifacts from the final
+tag, so published hashes must be recorded from that separately authorized run.
 
-No PyPI upload, remote push, pull request, GitHub release, tag, or Issue #4 state change was
-performed while preparing these notes.
+PhaseProbe 0.2.1 is not yet published. These notes do not assert that remote CI has passed. No
+merge, PyPI upload, GitHub release, tag, or Issue #4 closure is part of this pull request.

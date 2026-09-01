@@ -8,8 +8,11 @@ All notable changes are documented here. PhaseProbe follows semantic versioning.
   package in both wheel and source distribution and load through `importlib.resources` as the
   `scipy-lorenz`, `scipy-lorenz-negative`, `scipy-predator-prey`, and
   `scipy-predator-prey-coarse` built-in examples.
+- Preserved the four exact former `examples/scipy/` config paths as narrow compatibility aliases
+  when no file exists at the requested path. Existing user files take precedence; matching is
+  case-sensitive and separator-portable, with no fuzzy or basename fallback.
 - Added actionable, versioned diagnostics for missing or malformed built-in resources without
-  changing existing config-path or built-in-example behavior.
+  changing arbitrary config-path or built-in-example behavior.
 - Added Linux and Windows Python 3.12 release gates that build, inspect, install, and exercise the
   wheel and sdist outside the checkout with `PYTHONPATH` removed. The gate runs scan, replay,
   generated pytest, SciPy Lorenz, SciPy predator–prey, `pip check`, and a dependency-free base

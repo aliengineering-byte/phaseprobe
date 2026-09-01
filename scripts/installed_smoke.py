@@ -11,10 +11,11 @@ from pathlib import Path
 from typing import Any
 
 import phaseprobe
-from phaseprobe.config import EXAMPLE_FILES, load_example
+from phaseprobe.config import EXAMPLES, canonical_json, load_config, load_example
+from phaseprobe.errors import ConfigurationError
 
 
-def run_cli(cwd: Path, *arguments: str) -> str:
+def run_cli(cwd: Path, *arguments: str, expected_returncode: int = 0) -> str:
     environment = os.environ.copy()
     environment.pop("PYTHONPATH", None)
     completed = subprocess.run(
@@ -26,16 +27,17 @@ def run_cli(cwd: Path, *arguments: str) -> str:
         text=True,
         timeout=180,
     )
-    if completed.returncode != 0:
+    if completed.returncode != expected_returncode:
         raise RuntimeError(
-            f"phaseprobe {' '.join(arguments)} exited {completed.returncode}\n"
+            f"phaseprobe {' '.join(arguments)} exited {completed.returncode}; "
+            f"expected {expected_returncode}\n"
             f"stdout:\n{completed.stdout}\nstderr:\n{completed.stderr}"
         )
     return completed.stdout
 
 
-def json_cli(cwd: Path, *arguments: str) -> dict[str, Any]:
-    output = run_cli(cwd, *arguments)
+def json_cli(cwd: Path, *arguments: str, expected_returncode: int = 0) -> dict[str, Any]:
+    output = run_cli(cwd, *arguments, expected_returncode=expected_returncode)
     parsed = json.loads(output)
     if not isinstance(parsed, dict):
         raise RuntimeError(f"expected JSON object from {' '.join(arguments)}")
@@ -72,13 +74,59 @@ def main() -> int:
         raise RuntimeError("PYTHONPATH must be unset for installed-package verification")
 
     loaded_examples: dict[str, str] = {}
-    for name in EXAMPLE_FILES:
+    for name in EXAMPLES:
         config = load_example(name)
         loaded_examples[name] = str(config.data["schema_version"])
 
     help_output = run_cli(working_directory, "perturb", "--help")
     if "scipy-lorenz" not in help_output:
         raise RuntimeError("installed CLI help does not list the SciPy built-in examples")
+
+    scipy_cli_results: dict[str, str] = {}
+    scipy_commands = {
+        "scipy-lorenz": ("perturb", 0, "FINITE-TIME TRAJECTORY DIVERGENCE FOUND"),
+        "scipy-lorenz-negative": ("perturb", 0, "NO SENSITIVE PERTURBATION FOUND"),
+        "scipy-predator-prey": ("check", 0, "CHECK POLICY PASSED"),
+        "scipy-predator-prey-coarse": ("check", 1, "CHECK POLICY FAILED"),
+    }
+    for name, (command, returncode, expected_status) in scipy_commands.items():
+        result = json_cli(
+            working_directory,
+            command,
+            "--example",
+            name,
+            "--output-root",
+            f"{name} runs",
+            "--json",
+            expected_returncode=returncode,
+        )
+        status = result.get("status")
+        if status != expected_status:
+            raise RuntimeError(f"{name} reported {status!r}; expected {expected_status!r}")
+        scipy_cli_results[name] = str(status)
+
+    legacy_output = run_cli(working_directory, "perturb", "--config", "examples/scipy/lorenz.json")
+    if "FINITE-TIME TRAJECTORY DIVERGENCE FOUND" not in legacy_output:
+        raise RuntimeError("former SciPy Lorenz config path did not resolve to its built-in")
+
+    backslash_config = load_config(Path(r"examples\scipy\lorenz.json"))
+    if backslash_config.data != load_example("scipy-lorenz").data:
+        raise RuntimeError("backslash-separated former config path resolved incorrectly")
+    for missing in (Path("elsewhere/lorenz.json"), Path("examples/scipy/LORENZ.json")):
+        try:
+            load_config(missing)
+        except ConfigurationError as exc:
+            if "cannot read configuration" not in str(exc):
+                raise RuntimeError(f"unexpected missing-config diagnostic: {exc}") from exc
+        else:
+            raise RuntimeError(f"unrelated missing path was misclassified: {missing}")
+
+    former_path = working_directory / "examples" / "scipy" / "lorenz.json"
+    former_path.parent.mkdir(parents=True)
+    custom = load_example("scipy-lorenz-negative")
+    former_path.write_text(canonical_json(custom.data), encoding="utf-8")
+    if load_config(Path("examples/scipy/lorenz.json")).data != custom.data:
+        raise RuntimeError("an existing user config did not take precedence over compatibility")
 
     scan = json_cli(
         working_directory,
@@ -123,25 +171,6 @@ def main() -> int:
             f"stdout:\n{pytest_result.stdout}\nstderr:\n{pytest_result.stderr}"
         )
 
-    lorenz = json_cli(
-        working_directory,
-        "perturb",
-        "--example",
-        "scipy-lorenz",
-        "--output-root",
-        "lorenz runs",
-        "--json",
-    )
-    predator_prey = json_cli(
-        working_directory,
-        "check",
-        "--example",
-        "scipy-predator-prey",
-        "--output-root",
-        "predator prey runs",
-        "--json",
-    )
-
     print(
         json.dumps(
             {
@@ -151,11 +180,13 @@ def main() -> int:
                 "python_version": sys.version.split()[0],
                 "working_directory": str(working_directory),
                 "loaded_examples": loaded_examples,
+                "legacy_issue_4_command": "FINITE-TIME TRAJECTORY DIVERGENCE FOUND",
+                "scipy_cli_results": scipy_cli_results,
                 "scan": scan.get("status"),
                 "replay": replay.get("status"),
                 "generated_pytest": pytest_result.stdout.strip(),
-                "lorenz": lorenz.get("status"),
-                "predator_prey": predator_prey.get("status"),
+                "lorenz": scipy_cli_results["scipy-lorenz"],
+                "predator_prey": scipy_cli_results["scipy-predator-prey"],
             },
             indent=2,
             sort_keys=True,
