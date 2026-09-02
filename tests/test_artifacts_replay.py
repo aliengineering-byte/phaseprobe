@@ -64,6 +64,7 @@ def test_generated_pytest_genuinely_executes(artifact_run: Path, tmp_path: Path)
     }
     assert evidence["claim"]["baseline_classification"] == "bounded-positive-oscillation"
     assert evidence["claim"]["changed_classification"] is None
+    assert evidence["claim"]["kind"] == "simulation-replay-regression"
     assert evidence["decision"]["status"] == "REPLAY_VERIFIED"
     assert evidence["artifacts"]["replay_fixture"]["path"] == ("fixtures/predator_prey-replay.json")
     assert evidence["artifacts"]["pytest_regression"]["path"] == (

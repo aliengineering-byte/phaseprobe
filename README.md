@@ -184,6 +184,8 @@ Model names used for generated test paths are sanitized. The generated source co
 and copied fixture, it writes `<model>-pytest-evidence.json`: a path-portable claim/decision record
 containing repository/version attribution, the declared replay comparisons, SHA-256 hashes for
 both executable artifacts, the exact pytest command, and explicit scientific limitations.
+The record is unsigned: consumers must recompute the two artifact hashes to detect a recomputed or
+substituted record. It is portable integrity metadata, not an authentication signature.
 
 ## What PhaseProbe adds—and what it does not
 
@@ -266,6 +268,7 @@ python scripts/hygiene.py
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and the concrete good-first-issue templates in `.github/ISSUE_TEMPLATE/`.
+Report a reproducible defect with the [bug form](https://github.com/aliengineering-byte/phaseprobe/issues/new?template=bug_report.yml), or propose a bounded adapter or workflow with the [feature form](https://github.com/aliengineering-byte/phaseprobe/issues/new?template=feature_request.yml). Please do not include secrets or private model data.
 
 ## License and citation
 

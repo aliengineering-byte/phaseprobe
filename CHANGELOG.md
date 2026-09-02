@@ -8,6 +8,8 @@ All notable changes are documented here. PhaseProbe follows semantic versioning.
   validated replay verdict to SHA-256 hashes of the copied fixture and generated pytest, the
   exact reproduction command, PhaseProbe attribution, and explicit scientific limitations.
 - Identical generated evidence is idempotent; conflicting evidence is rejected without overwrite.
+- Invariant-only fixtures now use the narrower `simulation-replay-regression` claim kind, and the
+  unsigned evidence-integrity boundary is explicit.
 
 ## 0.2.1 — 2026-08-31
 

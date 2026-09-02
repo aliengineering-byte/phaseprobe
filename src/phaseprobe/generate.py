@@ -90,6 +90,15 @@ def test_{model_name}_transition_replays() -> None:
 '''
     fixture_bytes = fixture.read_bytes()
     source_bytes = source.encode("utf-8")
+    baseline_classification = _classification(payload.get("baseline"))
+    changed_classification = _classification(payload.get("changed"))
+    claim_kind = (
+        "qualitative-simulation-regression"
+        if baseline_classification is not None
+        and changed_classification is not None
+        and baseline_classification != changed_classification
+        else "simulation-replay-regression"
+    )
     evidence = {
         "schema_version": "1.0",
         "producer": {
@@ -99,10 +108,10 @@ def test_{model_name}_transition_replays() -> None:
             "documentation": "https://github.com/aliengineering-byte/phaseprobe#five-minute-quick-start",
         },
         "claim": {
-            "kind": "qualitative-simulation-regression",
+            "kind": claim_kind,
             "model": payload.get("model"),
-            "baseline_classification": _classification(payload.get("baseline")),
-            "changed_classification": _classification(payload.get("changed")),
+            "baseline_classification": baseline_classification,
+            "changed_classification": changed_classification,
             "reproducible_at_generation": payload.get("reproducible"),
         },
         "decision": {
@@ -127,6 +136,7 @@ def test_{model_name}_transition_replays() -> None:
         "limitations": [
             "Generation-time replay verifies only the fixture's declared exact or tolerance policy.",
             "The generated pytest detects future mismatch; it does not prove an exact bifurcation point or global minimality.",
+            "Artifact hashes are unsigned and must be recomputed by a consumer; the evidence record does not authenticate itself.",
         ],
     }
     evidence_bytes = (
