@@ -172,6 +172,7 @@ def _generate_command(args: argparse.Namespace) -> int:
         "status": "PYTEST REGRESSION GENERATED",
         "test": str(generated.test_path),
         "fixture": str(generated.fixture_path),
+        "evidence": str(generated.evidence_path),
     }
     if bool(getattr(args, "json", False)):
         sys.stdout.write(json_report(data))
@@ -180,6 +181,7 @@ def _generate_command(args: argparse.Namespace) -> int:
         print()
         print(f"Test: {generated.test_path}")
         print(f"Replay fixture: {generated.fixture_path}")
+        print(f"Execution evidence: {generated.evidence_path}")
     return int(ExitCode.OK)
 
 

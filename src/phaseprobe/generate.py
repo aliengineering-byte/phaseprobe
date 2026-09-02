@@ -2,19 +2,23 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from phaseprobe import __version__
 from phaseprobe.replay import validate_fixture, verify_replay
 
 
 @dataclass(frozen=True, slots=True)
 class GeneratedTest:
-    """Generated fixed-template test and copied integrity-protected fixture."""
+    """Generated test, copied fixture, and machine-readable execution evidence."""
 
     test_path: Path
     fixture_path: Path
+    evidence_path: Path
 
 
 def _safe_name(value: object) -> str:
@@ -33,6 +37,14 @@ def _reject_conflict(path: Path, expected: bytes, description: str) -> bool:
     return False
 
 
+def _sha256(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _classification(payload: object) -> object:
+    return payload.get("classification") if isinstance(payload, dict) else None
+
+
 def generate_regression_test(fixture: Path, output_directory: Path) -> GeneratedTest:
     """Validate evidence, copy its fixture, and emit a non-extensible pytest template."""
 
@@ -46,6 +58,7 @@ def generate_regression_test(fixture: Path, output_directory: Path) -> Generated
     fixture_directory = output_directory / "fixtures"
     copied_fixture = fixture_directory / f"{model_name}-replay.json"
     test_path = output_directory / f"test_{model_name}_transition.py"
+    evidence_path = output_directory / f"{model_name}-pytest-evidence.json"
     baseline = payload.get("baseline")
     metadata = baseline.get("execution_metadata") if isinstance(baseline, dict) else None
     adapter_configuration = (
@@ -77,12 +90,61 @@ def test_{model_name}_transition_replays() -> None:
 '''
     fixture_bytes = fixture.read_bytes()
     source_bytes = source.encode("utf-8")
+    evidence = {
+        "schema_version": "1.0",
+        "producer": {
+            "repository": "aliengineering-byte/phaseprobe",
+            "version": __version__,
+            "capability": "validated-replay-to-pytest",
+            "documentation": "https://github.com/aliengineering-byte/phaseprobe#five-minute-quick-start",
+        },
+        "claim": {
+            "kind": "qualitative-simulation-regression",
+            "model": payload.get("model"),
+            "baseline_classification": _classification(payload.get("baseline")),
+            "changed_classification": _classification(payload.get("changed")),
+            "reproducible_at_generation": payload.get("reproducible"),
+        },
+        "decision": {
+            "status": "REPLAY_VERIFIED",
+            "comparison_mode": verification.mode,
+            "comparisons": [dict(item) for item in verification.comparisons],
+        },
+        "artifacts": {
+            "replay_fixture": {
+                "path": copied_fixture.relative_to(output_directory).as_posix(),
+                "sha256": _sha256(fixture_bytes),
+            },
+            "pytest_regression": {
+                "path": test_path.relative_to(output_directory).as_posix(),
+                "sha256": _sha256(source_bytes),
+            },
+        },
+        "reproduction": {
+            "working_directory": ".",
+            "command": f"python -m pytest -q {test_path.name}",
+        },
+        "limitations": [
+            "Generation-time replay verifies only the fixture's declared exact or tolerance policy.",
+            "The generated pytest detects future mismatch; it does not prove an exact bifurcation point or global minimality.",
+        ],
+    }
+    evidence_bytes = (
+        json.dumps(evidence, allow_nan=False, indent=2, sort_keys=True) + "\n"
+    ).encode("utf-8")
     write_fixture = _reject_conflict(copied_fixture, fixture_bytes, "replay fixture")
     write_test = _reject_conflict(test_path, source_bytes, "generated pytest")
+    write_evidence = _reject_conflict(evidence_path, evidence_bytes, "generated pytest evidence")
     output_directory.mkdir(parents=True, exist_ok=True)
     fixture_directory.mkdir(exist_ok=True)
     if write_fixture:
         copied_fixture.write_bytes(fixture_bytes)
     if write_test:
         test_path.write_bytes(source_bytes)
-    return GeneratedTest(test_path=test_path, fixture_path=copied_fixture)
+    if write_evidence:
+        evidence_path.write_bytes(evidence_bytes)
+    return GeneratedTest(
+        test_path=test_path,
+        fixture_path=copied_fixture,
+        evidence_path=evidence_path,
+    )

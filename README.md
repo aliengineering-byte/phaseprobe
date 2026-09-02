@@ -180,6 +180,11 @@ manifest.json  sizes and SHA-256 hashes
 
 Model names used for generated test paths are sanitized. The generated source comes from a fixed template; configuration strings never become executable Python.
 
+`generate-test` validates the replay before writing anything. Alongside the fixed pytest template
+and copied fixture, it writes `<model>-pytest-evidence.json`: a path-portable claim/decision record
+containing repository/version attribution, the declared replay comparisons, SHA-256 hashes for
+both executable artifacts, the exact pytest command, and explicit scientific limitations.
+
 ## What PhaseProbe adds—and what it does not
 
 | existing category | established strength | PhaseProbe’s narrower job |

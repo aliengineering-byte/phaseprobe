@@ -2,6 +2,13 @@
 
 All notable changes are documented here. PhaseProbe follows semantic versioning.
 
+## Unreleased
+
+- `generate-test` now writes a path-portable claim/decision evidence record that binds the
+  validated replay verdict to SHA-256 hashes of the copied fixture and generated pytest, the
+  exact reproduction command, PhaseProbe attribution, and explicit scientific limitations.
+- Identical generated evidence is idempotent; conflicting evidence is rejected without overwrite.
+
 ## 0.2.1 — 2026-08-31
 
 - Fixed Issue #4: all four SciPy quick-start configurations now ship inside the importable

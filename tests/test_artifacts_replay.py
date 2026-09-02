@@ -54,6 +54,28 @@ def test_replay_rejects_tampering(artifact_run: Path) -> None:
 def test_generated_pytest_genuinely_executes(artifact_run: Path, tmp_path: Path) -> None:
     generated = generate_regression_test(artifact_run / "replay.json", tmp_path / "generated")
     assert str(tmp_path) not in generated.test_path.read_text(encoding="utf-8")
+    evidence = json.loads(generated.evidence_path.read_text(encoding="utf-8"))
+    assert str(tmp_path) not in generated.evidence_path.read_text(encoding="utf-8")
+    assert evidence["producer"] == {
+        "capability": "validated-replay-to-pytest",
+        "documentation": "https://github.com/aliengineering-byte/phaseprobe#five-minute-quick-start",
+        "repository": "aliengineering-byte/phaseprobe",
+        "version": "0.2.1",
+    }
+    assert evidence["claim"]["baseline_classification"] == "bounded-positive-oscillation"
+    assert evidence["claim"]["changed_classification"] is None
+    assert evidence["decision"]["status"] == "REPLAY_VERIFIED"
+    assert evidence["artifacts"]["replay_fixture"]["path"] == ("fixtures/predator_prey-replay.json")
+    assert evidence["artifacts"]["pytest_regression"]["path"] == (
+        "test_predator_prey_transition.py"
+    )
+    for artifact in evidence["artifacts"].values():
+        digest = hashlib.sha256((generated.test_path.parent / artifact["path"]).read_bytes())
+        assert digest.hexdigest() == artifact["sha256"]
+    assert evidence["reproduction"] == {
+        "command": "python -m pytest -q test_predator_prey_transition.py",
+        "working_directory": ".",
+    }
     assert (
         generate_regression_test(artifact_run / "replay.json", tmp_path / "generated") == generated
     )
@@ -82,6 +104,15 @@ def test_generated_pytest_refuses_conflicting_overwrite(artifact_run: Path, tmp_
     with pytest.raises(FileExistsError, match="refusing to overwrite"):
         generate_regression_test(artifact_run / "replay.json", output_directory)
     assert generated.test_path.read_text(encoding="utf-8") == "# user-owned test\n"
+
+
+def test_generated_pytest_refuses_conflicting_evidence(artifact_run: Path, tmp_path: Path) -> None:
+    output_directory = tmp_path / "generated"
+    generated = generate_regression_test(artifact_run / "replay.json", output_directory)
+    generated.evidence_path.write_text("{}\n", encoding="utf-8")
+    with pytest.raises(FileExistsError, match="generated pytest evidence"):
+        generate_regression_test(artifact_run / "replay.json", output_directory)
+    assert generated.evidence_path.read_text(encoding="utf-8") == "{}\n"
 
 
 def test_html_report_is_self_contained_and_offline(artifact_run: Path) -> None:

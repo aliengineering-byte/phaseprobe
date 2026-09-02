@@ -118,6 +118,7 @@ def test_replay_generate_and_report_commands(
     assert generate_code == ExitCode.OK
     generated_payload = json.loads(capsys.readouterr().out)
     assert Path(generated_payload["test"]).exists()
+    assert Path(generated_payload["evidence"]).exists()
 
     report_code = main(["report", str(cli_artifact), "--format", "all"])
     assert report_code == ExitCode.OK
