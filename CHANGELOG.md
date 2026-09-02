@@ -4,6 +4,8 @@ All notable changes are documented here. PhaseProbe follows semantic versioning.
 
 ## Unreleased
 
+- Added bounded offline `verify-evidence` validation for generated pytest evidence, replay
+  decisions, artifact hashes, safe relative paths, and the fixed regression template.
 - The unreleased package identity is now `0.3.0` for the new generated-evidence contract.
 - `generate-test` now writes a path-portable claim/decision evidence record that binds the
   validated replay verdict to SHA-256 hashes of the copied fixture and generated pytest, the

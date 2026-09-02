@@ -19,7 +19,7 @@ from phaseprobe.errors import (
     NumericalFailure,
     PhaseProbeError,
 )
-from phaseprobe.generate import generate_regression_test
+from phaseprobe.generate import generate_regression_test, verify_generated_evidence
 from phaseprobe.replay import verify_replay
 from phaseprobe.reporting import json_report, regenerate_reports, terminal_report
 
@@ -80,6 +80,12 @@ def build_parser() -> argparse.ArgumentParser:
     generate.add_argument("fixture", type=Path)
     generate.add_argument("--output-directory", type=Path, default=Path("tests") / "generated")
     generate.add_argument("--json", action="store_true")
+
+    verify_evidence = commands.add_parser(
+        "verify-evidence", help="verify generated pytest evidence and artifacts offline"
+    )
+    verify_evidence.add_argument("evidence", type=Path)
+    verify_evidence.add_argument("--json", action="store_true")
 
     report = commands.add_parser(
         "report", help="regenerate terminal, JSON, and offline HTML evidence"
@@ -185,6 +191,23 @@ def _generate_command(args: argparse.Namespace) -> int:
     return int(ExitCode.OK)
 
 
+def _verify_evidence_command(args: argparse.Namespace) -> int:
+    evidence = args.evidence
+    if not isinstance(evidence, Path):
+        raise ConfigurationError("evidence must be a path")
+    result = verify_generated_evidence(evidence)
+    data = result.as_dict()
+    if bool(getattr(args, "json", False)):
+        sys.stdout.write(json_report(data))
+    else:
+        print(data["status"])
+        print()
+        print(f"Evidence SHA-256: {result.evidence_sha256}")
+        print(f"Replay fixture: {result.fixture_path}")
+        print(f"Pytest regression: {result.test_path}")
+    return int(ExitCode.OK)
+
+
 def _report_command(args: argparse.Namespace) -> int:
     run_directory = args.run_directory
     report_format = args.format
@@ -223,6 +246,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _replay_command(args)
         if args.command == "generate-test":
             return _generate_command(args)
+        if args.command == "verify-evidence":
+            return _verify_evidence_command(args)
         if args.command == "report":
             return _report_command(args)
         raise ConfigurationError(f"unknown command {args.command!r}")
