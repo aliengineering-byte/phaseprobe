@@ -118,6 +118,13 @@ def test_replay_generate_and_report_commands(
     assert generate_code == ExitCode.OK
     generated_payload = json.loads(capsys.readouterr().out)
     assert Path(generated_payload["test"]).exists()
+    assert Path(generated_payload["evidence"]).exists()
+
+    verify_code = main(["verify-evidence", generated_payload["evidence"], "--json"])
+    assert verify_code == ExitCode.OK
+    verify_payload = json.loads(capsys.readouterr().out)
+    assert verify_payload["status"] == "GENERATED EVIDENCE VERIFIED"
+    assert verify_payload["integrity"] == "unsigned-recomputable"
 
     report_code = main(["report", str(cli_artifact), "--format", "all"])
     assert report_code == ExitCode.OK
@@ -146,6 +153,26 @@ def test_tampered_replay_is_invalid_input(cli_artifact: Path) -> None:
     payload["seed"] = 999
     fixture.write_text(json.dumps(payload), encoding="utf-8")
     assert main(["replay", str(fixture)]) == ExitCode.INVALID_INPUT
+
+
+def test_tampered_generated_evidence_is_invalid_input(cli_artifact: Path, tmp_path: Path) -> None:
+    generated_directory = tmp_path / "generated"
+    assert (
+        main(
+            [
+                "generate-test",
+                str(cli_artifact / "replay.json"),
+                "--output-directory",
+                str(generated_directory),
+            ]
+        )
+        == ExitCode.OK
+    )
+    evidence = next(generated_directory.glob("*-pytest-evidence.json"))
+    payload = json.loads(evidence.read_text(encoding="utf-8"))
+    payload["decision"]["status"] = "FABRICATED"
+    evidence.write_text(json.dumps(payload), encoding="utf-8")
+    assert main(["verify-evidence", str(evidence)]) == ExitCode.INVALID_INPUT
 
 
 def test_internal_defect_is_four(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

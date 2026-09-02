@@ -2,6 +2,18 @@
 
 All notable changes are documented here. PhaseProbe follows semantic versioning.
 
+## Unreleased
+
+- Added bounded offline `verify-evidence` validation for generated pytest evidence, replay
+  decisions, artifact hashes, safe relative paths, and the fixed regression template.
+- The unreleased package identity is now `0.3.0` for the new generated-evidence contract.
+- `generate-test` now writes a path-portable claim/decision evidence record that binds the
+  validated replay verdict to SHA-256 hashes of the copied fixture and generated pytest, the
+  exact reproduction command, PhaseProbe attribution, and explicit scientific limitations.
+- Identical generated evidence is idempotent; conflicting evidence is rejected without overwrite.
+- Invariant-only fixtures now use the narrower `simulation-replay-regression` claim kind, and the
+  unsigned evidence-integrity boundary is explicit.
+
 ## 0.2.1 — 2026-08-31
 
 - Fixed Issue #4: all four SciPy quick-start configurations now ship inside the importable

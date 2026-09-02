@@ -41,6 +41,7 @@ pip install phaseprobe pytest
 phaseprobe scan --example logistic
 phaseprobe replay .phaseprobe/runs/<run-id>/replay.json
 phaseprobe generate-test .phaseprobe/runs/<run-id>/replay.json
+phaseprobe verify-evidence tests/generated/logistic_map-pytest-evidence.json
 python -m pytest -q tests/generated
 phaseprobe report .phaseprobe/runs/<run-id>
 ```
@@ -134,6 +135,7 @@ does not import it. See [the audited contract](docs/SCIPY_SOLVE_IVP_AUDIT.md),
 | `check` | Execute a declared configuration policy for CI | Exit `1` only when policy fails |
 | `replay` | Validate fixture integrity and re-execute model, parameters, seed, initial state, tolerances, and retention | Declared `exact` or `tolerance` comparison passes |
 | `generate-test` | Validate and copy a fixture into a non-extensible pytest template without conflicting overwrites | Executable test under `tests/generated/` |
+| `verify-evidence` | Re-derive claims/replay decisions and validate bounded strict JSON, artifact hashes, paths, and the fixed template offline | Stable verified or invalid-input exit |
 | `report` | Regenerate terminal, versioned JSON, and self-contained offline HTML evidence | Local report files |
 
 Common options:
@@ -179,6 +181,22 @@ manifest.json  sizes and SHA-256 hashes
 ```
 
 Model names used for generated test paths are sanitized. The generated source comes from a fixed template; configuration strings never become executable Python.
+
+`generate-test` validates the replay before writing anything. Alongside the fixed pytest template
+and copied fixture, it writes `<model>-pytest-evidence.json`: a path-portable claim/decision record
+containing repository/version attribution, the declared replay comparisons, SHA-256 hashes for
+both executable artifacts, the exact pytest command, and explicit scientific limitations.
+Run `phaseprobe verify-evidence <evidence.json>` before pytest to validate the strict schema,
+recompute the hashes, re-execute the replay policy, derive the claim/decision fields, and confirm
+that the regression still matches PhaseProbe's fixed template. Validation is offline, bounded to a
+1 MiB evidence document and 32 MiB per generated artifact, rejects duplicate keys and unsafe paths,
+and exits `2` for invalid input.
+The record is unsigned: consumers must recompute the two artifact hashes to detect a recomputed or
+substituted record. It is portable integrity metadata, not an authentication signature.
+
+If `generate-test` reports a conflict, it has left the existing output untouched. An identical
+artifact can be generated again safely; for different content, inspect the existing files and
+choose a fresh output directory (or remove them only after deciding they are no longer needed).
 
 ## What PhaseProbe adds—and what it does not
 
@@ -261,6 +279,7 @@ python scripts/hygiene.py
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and the concrete good-first-issue templates in `.github/ISSUE_TEMPLATE/`.
+Report a reproducible defect with the [bug form](https://github.com/aliengineering-byte/phaseprobe/issues/new?template=bug_report.yml), or propose a bounded adapter or workflow with the [feature form](https://github.com/aliengineering-byte/phaseprobe/issues/new?template=feature_request.yml). Please do not include secrets or private model data.
 
 ## License and citation
 
