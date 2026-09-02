@@ -187,6 +187,10 @@ both executable artifacts, the exact pytest command, and explicit scientific lim
 The record is unsigned: consumers must recompute the two artifact hashes to detect a recomputed or
 substituted record. It is portable integrity metadata, not an authentication signature.
 
+If `generate-test` reports a conflict, it has left the existing output untouched. An identical
+artifact can be generated again safely; for different content, inspect the existing files and
+choose a fresh output directory (or remove them only after deciding they are no longer needed).
+
 ## What PhaseProbe adds—and what it does not
 
 | existing category | established strength | PhaseProbe’s narrower job |

@@ -60,7 +60,7 @@ def test_generated_pytest_genuinely_executes(artifact_run: Path, tmp_path: Path)
         "capability": "validated-replay-to-pytest",
         "documentation": "https://github.com/aliengineering-byte/phaseprobe#five-minute-quick-start",
         "repository": "aliengineering-byte/phaseprobe",
-        "version": "0.2.1",
+        "version": "0.3.0",
     }
     assert evidence["claim"]["baseline_classification"] == "bounded-positive-oscillation"
     assert evidence["claim"]["changed_classification"] is None
