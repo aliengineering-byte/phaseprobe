@@ -1,6 +1,8 @@
 # PhaseProbe
 
-> Find a simulation behavior boundary. Preserve it as a replay. Turn it into a test.
+> Find where simulation behavior changes.
+>
+> Turn it into a regression test.
 
 Maintaining a simulation is risky when a tiny parameter or initial-condition change can cross a qualitative boundary while ordinary numeric assertions still look plausible. PhaseProbe runs a bounded, deterministic search, records exactly what it tested, and emits an offline report plus an executable pytest regression.
 
